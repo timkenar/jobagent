@@ -1,0 +1,6 @@
+{
+  "name": "AI Job Search Email Assistant",
+  "description": "An AI-powered assistant to help you find relevant job postings, match them with your CV, and generate personalized email drafts for applications.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
