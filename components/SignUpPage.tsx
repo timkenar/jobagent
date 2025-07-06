@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { PaperAirplaneIcon } from './icons';
 import { signUpUser, signInUser, initializeGoogleSignIn } from '../services/geminiService';
 import LoadingSpinner from './LoadingSpinner';
+import EmailVerificationRequired from './EmailVerificationRequired';
 import gsap from 'gsap';
 
 interface SignUpPageProps {
@@ -24,6 +25,8 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignInSuccess }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
 
   // GSAP refs for animation
   const logoRef = useRef<HTMLDivElement>(null);
@@ -92,10 +95,26 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignInSuccess }) => {
         response = await signInUser(email, password);
       }
 
-      if (response.success && response.token) {
-        onSignInSuccess(response.token);
+      if (response.success) {
+        if (response.email_verification_required) {
+          // Show email verification page
+          setUserEmail(email);
+          setShowEmailVerification(true);
+        } else if (response.token) {
+          // Normal sign-in with token
+          onSignInSuccess(response.token);
+        } else {
+          setError(response.message || 'An unexpected error occurred.');
+        }
       } else {
-        setError(response.message || 'An unexpected error occurred.');
+        if (response.email_verification_required && response.email) {
+          // Sign in failed due to unverified email
+          setUserEmail(response.email);
+          setShowEmailVerification(true);
+          setError('');
+        } else {
+          setError(response.message || 'An unexpected error occurred.');
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred.');
@@ -110,7 +129,25 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignInSuccess }) => {
     setFullName('');
     setEmail('');
     setPassword('');
+    setShowEmailVerification(false);
+    setUserEmail('');
   };
+
+  const handleBackToSignup = () => {
+    setShowEmailVerification(false);
+    setUserEmail('');
+    setError('');
+  };
+
+  // Show email verification page if needed
+  if (showEmailVerification) {
+    return (
+      <EmailVerificationRequired 
+        email={userEmail}
+        onBackToSignup={handleBackToSignup}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-sky-100 via-white to-sky-200 p-2 sm:p-4">
