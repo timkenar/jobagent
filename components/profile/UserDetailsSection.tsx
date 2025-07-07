@@ -1,5 +1,5 @@
 import React from 'react';
-import { BriefcaseIcon } from './icons';
+import { BriefcaseIcon } from '../shared/icons';
 
 interface UserDetailsSectionProps {
   cvText: string;

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { CVUploadSection } from '../cv';
+import { JobRecommendations } from '../jobs';
 
 interface User {
   id: string;
@@ -147,6 +149,12 @@ const UserProfile: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* CV Upload Section */}
+      <CVUploadSection />
+
+      {/* Job Recommendations */}
+      <JobRecommendations />
 
       {/* Recent Activity */}
       <div className="bg-white rounded-xl shadow-lg p-6">

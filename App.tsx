@@ -1,9 +1,17 @@
 import React from 'react';
-import ChatBotWidget from './components/chatbot'; // Import chatbot widget
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useJobSearch } from './src/hooks/useJobSearch';
-import SignUpPage from './components/SignUpPage';
-import Dashboard from './components/Dashboard';
-import LoadingSpinner from './components/LoadingSpinner';
+import { GmailProvider } from './src/contexts/GmailContext';
+import { ThemeProvider } from './src/contexts/ThemeContext';
+import {
+  SignUpPage,
+  EmailVerificationPage,
+  EmailVerificationRequired,
+  OAuthCallback
+} from './components/auth';
+import { Dashboard } from './components/dashboard';
+import { LoadingSpinner, EnhancedChatbot } from './components/shared';
+import GmailAccountSection from './components/email/Email';
 
 const App = () => {
   const {
@@ -45,15 +53,61 @@ const App = () => {
     );
   }
 
-  if (!isSignedIn) {
-    return <SignUpPage onSignInSuccess={handleSignInSuccess} />;
-  }
-
   return (
-    <>
-      <Dashboard />
-      <ChatBotWidget /> {/* Floating chatbot component */}
-    </>
+    <ThemeProvider defaultTheme="system">
+      <GmailProvider>
+        <Router>
+        <Routes>
+        {/* Email verification route - accessible without being signed in */}
+        <Route path="/verify-email" element={<EmailVerificationPage />} />
+        
+        {/* OAuth callback route - accessible without being signed in */}
+        <Route path="/oauth-callback" element={<OAuthCallback />} />
+        
+        {/* Email verification required route */}
+        <Route path="/verify-email-required" element={<EmailVerificationRequired />} />
+        
+        {/* Sign in route - redirect to main page if not signed in */}
+        <Route path="/signin" element={
+          !isSignedIn ? (
+            <SignUpPage onSignInSuccess={handleSignInSuccess} />
+          ) : (
+            <>
+              <Dashboard />
+              <EnhancedChatbot />
+            </>
+          )
+        } />
+        
+        {/* Main app routes */}
+        <Route path="/*" element={
+          !isSignedIn ? (
+            <SignUpPage onSignInSuccess={handleSignInSuccess} />
+          ) : (
+            <>
+              <Dashboard />
+              <EnhancedChatbot /> {/* Floating chatbot component */}
+            </>
+          )
+        } />
+        {/* Gmail account section route */}
+        {/* <Route path="/email" element={ 
+          !isSignedIn ? (
+            <SignUpPage onSignInSuccess={handleSignInSuccess} />
+          ) : (
+            <>
+            <Dashboard />
+            <GmailAccountSection gmail={{}} />
+            </>
+          )
+        } /> */}
+          
+          
+          
+        </Routes>
+      </Router>
+      </GmailProvider>
+    </ThemeProvider>
   );
 };
 

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { PaperAirplaneIcon } from './icons';
-import { signUpUser, signInUser, initializeGoogleSignIn } from '../services/geminiService';
-import LoadingSpinner from './LoadingSpinner';
-import EmailVerificationRequired from './EmailVerificationRequired';
+import { PaperAirplaneIcon } from '../shared/icons';
+import { signUpUser, signInUser, initializeGoogleSignIn } from '../../services/geminiService';
+import { LoadingSpinner } from '../shared';
+import { EmailVerificationRequired } from '../auth';
 import gsap from 'gsap';
 
 interface SignUpPageProps {

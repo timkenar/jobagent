@@ -1,6 +1,6 @@
 import React from 'react';
-import { GeneratedEmail, JobPosting } from '../types';
-import { CheckIcon, ClipboardIcon, XMarkIcon } from './icons';
+import { GeneratedEmail, JobPosting } from '../../types';
+import { CheckIcon, ClipboardIcon, XMarkIcon } from '../shared/icons';
 
 interface GeneratedEmailModalProps {
   generatedEmail: GeneratedEmail | null;

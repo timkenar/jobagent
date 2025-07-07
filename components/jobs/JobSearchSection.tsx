@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { JobPosting, GeneratedEmail } from '../types'; // Assuming types.ts is in the same directory
-import { SearchIcon, SparklesIcon, XIcon, PaperAirplaneIcon, ClipboardIcon } from './icons'; // Assuming icons.ts
-import LoadingSpinner from './LoadingSpinner';
+import { JobPosting, GeneratedEmail } from '../../types';
+import { SearchIcon, SparklesIcon, XIcon, PaperAirplaneIcon, ClipboardIcon } from '../shared/icons';
+import { LoadingSpinner } from '../shared';
 import gsap from 'gsap';
+import axios from 'axios';
 
 interface JobSearchSectionProps {
   jobSearchQuery: string;
@@ -44,6 +45,8 @@ const JobSearchSection: React.FC<JobSearchSectionProps> = ({
   const [queuedJobs, setQueuedJobs] = useState<JobPosting[]>([]);
   const [recipientEmail, setRecipientEmail] = useState<string>(''); // State for recipient email
   const [emailSubject, setEmailSubject] = useState<string>(''); // State for email subject
+  const [hasUploadedCV, setHasUploadedCV] = useState<boolean>(false);
+  const [cvData, setCvData] = useState<any>(null);
 
   // GSAP refs for animation
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -53,6 +56,9 @@ const JobSearchSection: React.FC<JobSearchSectionProps> = ({
   const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Check for uploaded CV
+    checkForUploadedCV();
+    
     // Animate main section, header, search bar, and results
     gsap.set([
       sectionRef.current,
@@ -65,6 +71,25 @@ const JobSearchSection: React.FC<JobSearchSectionProps> = ({
     gsap.to(searchBarRef.current, { opacity: 1, y: 0, duration: 0.7, delay: 0.4, ease: 'power3.out' });
     gsap.to(resultsRef.current, { opacity: 1, y: 0, duration: 0.7, delay: 0.6, ease: 'power3.out' });
   }, [jobResults.length]);
+
+  const checkForUploadedCV = async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) return;
+
+      const response = await axios.get('http://localhost:8000/api/cvs/active/', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data) {
+        setHasUploadedCV(true);
+        setCvData(response.data);
+      }
+    } catch (err: any) {
+      // No active CV found
+      setHasUploadedCV(false);
+    }
+  };
 
   useEffect(() => {
     // Animate modal when it appears
@@ -106,10 +131,25 @@ const JobSearchSection: React.FC<JobSearchSectionProps> = ({
 
   return (
     <section ref={sectionRef} className="mb-8 p-4 sm:p-6 bg-white/90 rounded-3xl shadow-2xl border border-slate-100 backdrop-blur-md transition-all duration-300">
-      <h2 ref={headerRef} className="text-2xl sm:text-3xl font-extrabold text-slate-700 mb-4 flex items-center gap-2 tracking-tight">
-        <SearchIcon className="w-7 h-7 text-sky-600" />
-        Search for Jobs
-      </h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 ref={headerRef} className="text-2xl sm:text-3xl font-extrabold text-slate-700 flex items-center gap-2 tracking-tight">
+          <SearchIcon className="w-7 h-7 text-sky-600" />
+          Search for Jobs
+        </h2>
+        {hasUploadedCV && cvData && (
+          <div className="flex items-center space-x-2 text-sm">
+            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            <span className="text-green-600 font-medium">CV uploaded</span>
+            <span className="text-gray-500">({cvData.skills?.length || 0} skills)</span>
+          </div>
+        )}
+        {!hasUploadedCV && !cvText.trim() && (
+          <div className="flex items-center space-x-2 text-sm">
+            <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+            <span className="text-yellow-600 font-medium">Upload CV to enable search</span>
+          </div>
+        )}
+      </div>
       <div ref={searchBarRef} className="flex flex-col sm:flex-row gap-3 mb-6">
         <input
           type="text"
@@ -121,7 +161,7 @@ const JobSearchSection: React.FC<JobSearchSectionProps> = ({
         />
         <button
           onClick={handleSearchJobs}
-          disabled={isLoadingSearch || !cvText.trim()}
+          disabled={isLoadingSearch || (!cvText.trim() && !hasUploadedCV)}
           className="bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 px-6 rounded-xl shadow-md flex items-center justify-center transition-all duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed text-base"
           aria-live="polite"
         >

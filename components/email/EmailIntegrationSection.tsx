@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
+import { GmailEmailsList } from '../email';
+import { useGmail } from '../../src/contexts/GmailContext';
 
 interface EmailAccount {
   id: number;
@@ -8,87 +10,51 @@ interface EmailAccount {
 }
 
 const EmailIntegrationSection: React.FC = () => {
-  const [accounts, setAccounts] = useState<EmailAccount[]>([]);
+  const gmail = useGmail();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const sectionRef = useRef<HTMLDivElement>(null);
 
-  // Fetch connected accounts
-  const fetchAccounts = async () => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      setError('Please sign in to connect your email accounts.');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    try {
-      const res = await axios.get('http://localhost:8000/api/email-accounts/', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setAccounts(res.data);
-    } catch (err: any) {
-      if (err.response?.status === 401) {
-        setError('Authentication expired. Please sign in again.');
-        localStorage.removeItem('authToken'); // Clear invalid token
-      } else {
-        setError('Failed to fetch connected accounts.');
-      }
-      console.error('Fetch accounts error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Use Gmail context for account management
   useEffect(() => {
-    fetchAccounts();
-  }, []);
+    if (gmail.error) {
+      setError(gmail.error);
+    }
+  }, [gmail.error]);
 
-  // Add window message listener for OAuth code
+  // Add window message listener for OAuth success from popup
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
-      if (event.data?.type === 'gmail_oauth_code' && event.data.code) {
-        // Send code to backend for token exchange
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-          setError('Please sign in to connect your email accounts.');
-          return;
-        }
-        setLoading(true);
-        axios.post('http://localhost:8000/api/email-accounts/gmail-oauth-callback/', {
-          code: event.data.code,
-          redirect_uri: 'http://localhost:8000/api/email-accounts/gmail-oauth-callback/',
-        }, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-        .then((callbackRes) => {
-          if (callbackRes.data.success) {
-            fetchAccounts();
-            setError('Gmail connected successfully!');
-            setTimeout(() => setError(''), 3000);
-          } else {
-            setError(callbackRes.data.error || 'Failed to complete Gmail authentication.');
-          }
-        })
-        .catch((callbackError) => {
-          if (callbackError.response?.status === 401) {
-            setError('Authentication expired. Please sign in again.');
-            localStorage.removeItem('authToken'); // Clear invalid token
-          } else {
-            setError(callbackError.response?.data?.error || 'Failed to complete authentication. Please try again.');
-          }
-        })
-        .finally(() => setLoading(false));
+      console.log('Received message:', event.data);
+      
+      // Handle OAuth success from popup
+      if (event.data?.type === 'gmail_oauth_success') {
+        console.log('Gmail OAuth success received from popup');
+        setSuccessMessage('Gmail connected successfully! 🎉');
+        gmail.refreshAccounts(); // Refresh the accounts list
+        setLoading(false);
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => setSuccessMessage(''), 3000);
+      }
+      
+      // Handle OAuth errors from popup
+      else if (event.data?.type === 'gmail_oauth_error') {
+        console.error('OAuth error received from popup:', event.data.error);
+        setError(`Gmail authentication failed: ${event.data.error}`);
+        setLoading(false);
       }
     }
+    
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  }, [gmail]);
 
   // Update handleConnect to use postMessage instead of polling
   const handleConnect = async (provider: 'gmail' | 'outlook') => {
     setError('');
+    setSuccessMessage('');
     setLoading(true);
     try {
       const token = localStorage.getItem('authToken');
@@ -156,12 +122,14 @@ const EmailIntegrationSection: React.FC = () => {
         </div>
       </div>
       
+      {successMessage && (
+        <div className="mb-4 p-3 border rounded-lg text-center bg-green-100 text-green-700 border-green-300">
+          {successMessage}
+        </div>
+      )}
+      
       {error && (
-        <div className={`mb-4 p-3 border rounded-lg text-center ${
-          error.includes('successfully') 
-            ? 'bg-green-100 text-green-700 border-green-300' 
-            : 'bg-red-100 text-red-700 border-red-300'
-        }`}>
+        <div className="mb-4 p-3 border rounded-lg text-center bg-red-100 text-red-700 border-red-300">
           {error}
         </div>
       )}
@@ -206,19 +174,19 @@ const EmailIntegrationSection: React.FC = () => {
       <div className="border-t border-gray-200 pt-6">
         <div className="flex items-center justify-between mb-4">
           <h4 className="text-lg font-semibold text-gray-900">Connected Accounts</h4>
-          {accounts.length > 0 && (
+          {gmail.emailAccounts.length > 0 && (
             <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-              {accounts.length} Connected
+              {gmail.emailAccounts.length} Connected
             </span>
           )}
         </div>
         
-        {loading && accounts.length === 0 ? (
+        {loading && gmail.emailAccounts.length === 0 ? (
           <div className="flex items-center justify-center py-8">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
             <span className="ml-2 text-gray-500">Loading accounts...</span>
           </div>
-        ) : accounts.length === 0 ? (
+        ) : gmail.emailAccounts.length === 0 ? (
           <div className="text-center py-8">
             <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -228,7 +196,7 @@ const EmailIntegrationSection: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-3">
-            {(Array.isArray(accounts) ? accounts : []).map((acc) => (
+            {gmail.emailAccounts.map((acc) => (
               <div key={acc.id} className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center justify-between hover:bg-gray-100 transition-colors">
                 <div className="flex items-center space-x-3">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
@@ -264,6 +232,13 @@ const EmailIntegrationSection: React.FC = () => {
           </div>
         )}
       </div>
+      
+      {/* Gmail Emails List */}
+      {/* {gmail.isGmailConnected && (
+        <div className="mt-6">
+          <GmailEmailsList emailAccountId={gmail.gmailAccount?.id || 0} />
+        </div>
+      )} */}
     </div>
   );
 };
