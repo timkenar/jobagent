@@ -12,6 +12,7 @@ interface JobSearchSectionProps {
   isLoadingSearch: boolean;
   cvText: string;
   handleSearchJobs: () => Promise<void>;
+  handleSearchJobsWithCV?: () => Promise<void>; // New prop for CV-based search
   handleGenerateEmail: (job: JobPosting) => Promise<void>;
   isLoadingEmail: boolean;
   selectedJobForEmail: JobPosting | null;
@@ -22,6 +23,8 @@ interface JobSearchSectionProps {
   handleSendEmail: (recipientEmail: string, subject: string, body: string) => Promise<void>; // New prop for sending email
   isEmailSending: boolean; // New prop for email sending status
   emailSentMessage: string | null; // New prop for email sent message
+  hasUploadedCV?: boolean; // New prop for CV status
+  cvInfo?: any; // New prop for CV information
 }
 
 const JobSearchSection: React.FC<JobSearchSectionProps> = ({
@@ -31,6 +34,7 @@ const JobSearchSection: React.FC<JobSearchSectionProps> = ({
   isLoadingSearch,
   cvText,
   handleSearchJobs,
+  handleSearchJobsWithCV,
   handleGenerateEmail,
   isLoadingEmail,
   selectedJobForEmail,
@@ -41,12 +45,24 @@ const JobSearchSection: React.FC<JobSearchSectionProps> = ({
   handleSendEmail,
   isEmailSending,
   emailSentMessage,
+  hasUploadedCV: propHasUploadedCV,
+  cvInfo: propCvInfo,
 }) => {
   const [queuedJobs, setQueuedJobs] = useState<JobPosting[]>([]);
   const [recipientEmail, setRecipientEmail] = useState<string>(''); // State for recipient email
   const [emailSubject, setEmailSubject] = useState<string>(''); // State for email subject
-  const [hasUploadedCV, setHasUploadedCV] = useState<boolean>(false);
-  const [cvData, setCvData] = useState<any>(null);
+  const [hasUploadedCV, setHasUploadedCV] = useState<boolean>(propHasUploadedCV || false);
+  const [cvData, setCvData] = useState<any>(propCvInfo || null);
+  
+  // Update local state when props change
+  useEffect(() => {
+    if (propHasUploadedCV !== undefined) {
+      setHasUploadedCV(propHasUploadedCV);
+    }
+    if (propCvInfo !== undefined) {
+      setCvData(propCvInfo);
+    }
+  }, [propHasUploadedCV, propCvInfo]);
 
   // GSAP refs for animation
   const sectionRef = useRef<HTMLDivElement>(null);
@@ -138,36 +154,72 @@ const JobSearchSection: React.FC<JobSearchSectionProps> = ({
         </h2>
         {hasUploadedCV && cvData && (
           <div className="flex items-center space-x-2 text-sm">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
             <span className="text-green-600 font-medium">CV uploaded</span>
             <span className="text-gray-500">({cvData.skills?.length || 0} skills)</span>
+            {cvData.job_category && (
+              <span className="text-blue-600 text-xs bg-blue-50 px-2 py-1 rounded-full">
+                {cvData.job_category}
+              </span>
+            )}
           </div>
         )}
         {!hasUploadedCV && !cvText.trim() && (
           <div className="flex items-center space-x-2 text-sm">
             <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-            <span className="text-yellow-600 font-medium">Upload CV to enable search</span>
+            <span className="text-yellow-600 font-medium">Upload CV to enable AI job search</span>
           </div>
         )}
       </div>
-      <div ref={searchBarRef} className="flex flex-col sm:flex-row gap-3 mb-6">
-        <input
-          type="text"
-          value={jobSearchQuery}
-          onChange={(e) => setJobSearchQuery(e.target.value.slice(0, 100))}
-          placeholder="e.g., 'React developer remote'"
-          className="flex-grow p-3 border border-slate-300 rounded-xl shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors bg-slate-50 text-base"
-          aria-label="Job search query"
-        />
-        <button
-          onClick={handleSearchJobs}
-          disabled={isLoadingSearch || (!cvText.trim() && !hasUploadedCV)}
-          className="bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 px-6 rounded-xl shadow-md flex items-center justify-center transition-all duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed text-base"
-          aria-live="polite"
-        >
-          {isLoadingSearch ? <LoadingSpinner size={5} /> : <SearchIcon className="w-5 h-5 mr-2" />}
-          Search Jobs
-        </button>
+      <div ref={searchBarRef} className="flex flex-col gap-3 mb-6">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <input
+            type="text"
+            value={jobSearchQuery}
+            onChange={(e) => setJobSearchQuery(e.target.value.slice(0, 100))}
+            placeholder={hasUploadedCV ? "Optional: Specify job title or leave empty for CV-based search" : "e.g., 'React developer remote'"}
+            className="flex-grow p-3 border border-slate-300 rounded-xl shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition-colors bg-slate-50 text-base"
+            aria-label="Job search query"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={handleSearchJobs}
+              disabled={isLoadingSearch || (!cvText.trim() && !hasUploadedCV)}
+              className="bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 px-6 rounded-xl shadow-md flex items-center justify-center transition-all duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed text-base"
+              aria-live="polite"
+            >
+              {isLoadingSearch ? <LoadingSpinner size={5} /> : <SearchIcon className="w-5 h-5 mr-2" />}
+              Regular Search
+            </button>
+            {hasUploadedCV && handleSearchJobsWithCV && (
+              <button
+                onClick={handleSearchJobsWithCV}
+                disabled={isLoadingSearch}
+                className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold py-3 px-6 rounded-xl shadow-md flex items-center justify-center transition-all duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed text-base"
+                aria-live="polite"
+              >
+                {isLoadingSearch ? <LoadingSpinner size={5} /> : (
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                )}
+                AI Search
+              </button>
+            )}
+          </div>
+        </div>
+        
+        {hasUploadedCV && (
+          <div className="text-xs text-slate-600 bg-emerald-50 p-3 rounded-lg border border-emerald-200">
+            <div className="flex items-center">
+              <svg className="w-4 h-4 text-emerald-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              <span className="font-medium text-emerald-700">AI Search:</span>
+              <span className="ml-1">Uses Google search + your CV to find personalized job matches with compatibility scores</span>
+            </div>
+          </div>
+        )}
       </div>
       {isLoadingSearch && <LoadingSpinner message="Searching for jobs..." />}
       {queuedJobs.length > 0 && (
@@ -186,9 +238,58 @@ const JobSearchSection: React.FC<JobSearchSectionProps> = ({
                   className="bg-slate-50 p-4 rounded-xl shadow hover:shadow-lg transition-shadow flex flex-col justify-between border border-slate-200"
                 >
                   <div>
-                    <h4 className="font-semibold text-sky-700 text-lg">{job.title}</h4>
-                    {job.companyName && <p className="text-sm text-slate-600 mb-1">{job.companyName}</p>}
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="font-semibold text-sky-700 text-lg flex-1">{job.title}</h4>
+                      {job.matchScore && (
+                        <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                          job.matchScore >= 80 ? 'bg-green-100 text-green-800' :
+                          job.matchScore >= 60 ? 'bg-blue-100 text-blue-800' :
+                          job.matchScore >= 40 ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {Math.round(job.matchScore)}% match
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
+                      {job.companyName && <p className="text-sm text-slate-600">{job.companyName}</p>}
+                      {job.location && <p className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">{job.location}</p>}
+                    </div>
                     <p className="text-sm text-slate-500 mb-3 line-clamp-3">{job.snippet}</p>
+                    
+                    {job.matchedSkills && job.matchedSkills.length > 0 && (
+                      <div className="mb-2">
+                        <p className="text-xs text-slate-600 mb-1">Matched Skills:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {job.matchedSkills.slice(0, 3).map((skill, index) => (
+                            <span key={index} className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">
+                              {skill}
+                            </span>
+                          ))}
+                          {job.matchedSkills.length > 3 && (
+                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                              +{job.matchedSkills.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {job.matchReasons && job.matchReasons.length > 0 && (
+                      <div className="mb-2">
+                        <p className="text-xs text-slate-600 mb-1">Why this matches:</p>
+                        <ul className="text-xs text-slate-500">
+                          {job.matchReasons.slice(0, 2).map((reason, index) => (
+                            <li key={index} className="flex items-center">
+                              <svg className="w-3 h-3 text-emerald-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              {reason}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center justify-between space-x-2 mt-2">
                     <a

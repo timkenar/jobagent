@@ -1,5 +1,41 @@
 import { JobPosting } from '../types'; // Assuming types.ts is in the same directory
 
+// Add CV status check function
+export const checkCVStatus = async (token: string | null): Promise<{
+  hasActiveCV: boolean;
+  cvInfo?: {
+    id: number;
+    original_filename: string;
+    job_category: string;
+    skills: string[];
+    experience_years: number;
+    seniority_level: string;
+  };
+}> => {
+  if (!token) return { hasActiveCV: false };
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/cvs/active/`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    
+    if (response.ok) {
+      const cvData = await response.json();
+      return {
+        hasActiveCV: true,
+        cvInfo: cvData
+      };
+    } else {
+      return { hasActiveCV: false };
+    }
+  } catch (error) {
+    return { hasActiveCV: false };
+  }
+};
+
 declare global {
   interface Window {
     google: {
@@ -37,6 +73,81 @@ interface JobSearchApiResponse {
   success: boolean;
   results: JobPosting[];
 }
+
+// Add CV-based job search function
+export const searchJobsWithCV = async (token: string | null, jobTitle?: string, location?: string): Promise<JobPosting[]> => {
+  if (!token) throw new Error('Authentication token is required.');
+  try {
+    // Use the CV-based job matching endpoint
+    const response = await fetch(`${API_BASE_URL}/job-matches/find_matches/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ 
+        job_title: jobTitle || '', // Optional - backend will use CV data if not provided
+        location: location || '' // Optional - backend will use CV preferred locations if not provided
+      }),
+    });
+    
+    const data = await handleResponse<{
+      success: boolean;
+      message: string;
+      matches_created: number;
+      search_query: string;
+    }>(response);
+    
+    if (data.success) {
+      // After creating matches, fetch the actual job matches
+      const matchesResponse = await fetch(`${API_BASE_URL}/job-matches/`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      const matchesData = await handleResponse<{
+        results: Array<{
+          id: number;
+          job_title: string;
+          company_name: string;
+          job_description: string;
+          job_url: string;
+          location: string;
+          match_score: number;
+          matched_skills: string[];
+          missing_skills: string[];
+          match_reasons: string[];
+          status: string;
+          created_at: string;
+        }>;
+      }>(matchesResponse);
+      
+      // Convert job matches to JobPosting format
+      const jobPostings: JobPosting[] = matchesData.results
+        .sort((a, b) => b.match_score - a.match_score) // Sort by match score
+        .slice(0, 20) // Limit to top 20 matches
+        .map(match => ({
+          id: match.id.toString(),
+          title: match.job_title,
+          companyName: match.company_name,
+          snippet: match.job_description,
+          url: match.job_url,
+          location: match.location,
+          matchScore: match.match_score,
+          matchedSkills: match.matched_skills,
+          matchReasons: match.match_reasons
+        }));
+      
+      return jobPostings;
+    } else {
+      throw new Error(data.message || 'Failed to search for jobs.');
+    }
+  } catch (error) {
+    throw new Error(`Failed to search for jobs. ${error instanceof Error ? error.message : String(error)}`);
+  }
+};
 
 async function handleResponse<T>(response: Response): Promise<T> {
   const contentType = response.headers.get('content-type');
@@ -197,19 +308,68 @@ export const signOutUser = async (token: string | null): Promise<void> => {
 export const searchOnlineJobs = async (query: string, token: string | null): Promise<JobPosting[]> => {
   if (!token) throw new Error('Authentication token is required.');
   try {
-    // Expect the JobSearchApiResponse structure
-    const response = await fetch(`${API_BASE_URL}/jobs/search/`, {
+    // Use the new Google search-based job matching endpoint
+    const response = await fetch(`${API_BASE_URL}/job-matches/find_matches/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ query }),
+      body: JSON.stringify({ 
+        job_title: query, // Optional - backend will use CV data if not provided
+        location: '' // Optional - backend will use CV preferred locations if not provided
+      }),
     });
-    // Parse the full response object, then extract the 'results' array
-    const data = await handleResponse<JobSearchApiResponse>(response);
+    
+    const data = await handleResponse<{
+      success: boolean;
+      message: string;
+      matches_created: number;
+      search_query: string;
+    }>(response);
+    
     if (data.success) {
-      return data.results; // Return only the array of job postings
+      // After creating matches, fetch the actual job matches
+      const matchesResponse = await fetch(`${API_BASE_URL}/job-matches/`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      const matchesData = await handleResponse<{
+        results: Array<{
+          id: number;
+          job_title: string;
+          company_name: string;
+          job_description: string;
+          job_url: string;
+          location: string;
+          match_score: number;
+          matched_skills: string[];
+          missing_skills: string[];
+          match_reasons: string[];
+          status: string;
+          created_at: string;
+        }>;
+      }>(matchesResponse);
+      
+      // Convert job matches to JobPosting format
+      const jobPostings: JobPosting[] = matchesData.results
+        .filter(match => match.status === 'pending') // Only show new matches
+        .map(match => ({
+          id: match.id.toString(),
+          title: match.job_title,
+          companyName: match.company_name,
+          snippet: match.job_description,
+          url: match.job_url,
+          location: match.location,
+          matchScore: match.match_score,
+          matchedSkills: match.matched_skills,
+          matchReasons: match.match_reasons
+        }));
+      
+      return jobPostings;
     } else {
       throw new Error(data.message || 'Failed to search for jobs.');
     }

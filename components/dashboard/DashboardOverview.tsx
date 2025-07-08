@@ -26,23 +26,27 @@ const DashboardOverview: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading dashboard stats
     const loadStats = async () => {
       try {
-        // In a real app, this would be an API call
-        setTimeout(() => {
-          setStats({
-            jobsApplied: 24,
-            repliesReceived: 8,
-            availableTokens: 750,
-            planType: 'Premium Plan',
-            successRate: 33.3,
-            pendingApplications: 16,
-            interviewsScheduled: 3,
-            totalSearches: 45
-          });
-          setLoading(false);
-        }, 1000);
+        const token = localStorage.getItem('authToken');
+        const response = await fetch('/api/dashboard/stats', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        if (!response.ok) throw new Error('Failed to fetch stats');
+        const data = await response.json();
+        setStats({
+          jobsApplied: data.jobsApplied,
+          repliesReceived: data.repliesReceived,
+          availableTokens: data.availableTokens,
+          planType: data.planType,
+          successRate: data.successRate,
+          pendingApplications: data.pendingApplications,
+          interviewsScheduled: data.interviewsScheduled,
+          totalSearches: data.totalSearches,
+        });
+        setLoading(false);
       } catch (error) {
         console.error('Error loading dashboard stats:', error);
         setLoading(false);
@@ -50,6 +54,16 @@ const DashboardOverview: React.FC = () => {
     };
 
     loadStats();
+
+    const handleNotification = () => {
+        loadStats();
+    };
+
+    window.addEventListener('notification', handleNotification);
+
+    return () => {
+        window.removeEventListener('notification', handleNotification);
+    };
   }, []);
 
   const StatCard: React.FC<{

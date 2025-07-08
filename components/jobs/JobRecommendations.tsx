@@ -21,10 +21,32 @@ const JobRecommendations: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchingMatches, setSearchingMatches] = useState(false);
   const [error, setError] = useState('');
+  const [cvStatus, setCvStatus] = useState<{hasActiveCV: boolean, cvInfo?: any}>({hasActiveCV: false});
 
   useEffect(() => {
     fetchJobMatches();
+    checkCVStatus();
   }, []);
+
+  const checkCVStatus = async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) return;
+
+      const response = await axios.get('http://localhost:8000/api/cvs/active/', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setCvStatus({
+        hasActiveCV: true,
+        cvInfo: response.data
+      });
+    } catch (err: any) {
+      if (err.response?.status === 404) {
+        setCvStatus({hasActiveCV: false});
+      }
+    }
+  };
 
   const fetchJobMatches = async () => {
     try {
@@ -52,19 +74,24 @@ const JobRecommendations: React.FC = () => {
       const token = localStorage.getItem('authToken');
       if (!token) return;
 
+      // Call the backend API to find matches based on user's CV
+      // No need to specify job_title or location - the backend will use CV data
       const response = await axios.post('http://localhost:8000/api/job-matches/find_matches/', {
-        job_title: 'Software Engineer', // Default search - could be made configurable
-        location: 'Remote'
+        // Backend will automatically use CV data to determine job search parameters
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       if (response.data.success) {
         await fetchJobMatches(); // Refresh the list
+        // Show success message with search details
+        if (response.data.search_query) {
+          console.log(`Searched for: ${response.data.search_query}`);
+        }
       }
     } catch (err: any) {
       console.error('Error finding job matches:', err);
-      setError(err.response?.data?.error || 'Failed to find job matches');
+      setError(err.response?.data?.error || err.response?.data?.details || 'Failed to find job matches');
     } finally {
       setSearchingMatches(false);
     }
@@ -135,14 +162,17 @@ const JobRecommendations: React.FC = () => {
           </div>
           <div>
             <h3 className="text-xl font-bold text-gray-900">Job Recommendations</h3>
-            <p className="text-gray-600 text-sm">AI-powered matches based on your CV</p>
+            <p className="text-gray-600 text-sm">
+              AI-powered job search using your CV data and Google search
+            </p>
           </div>
         </div>
         
         <button
           onClick={findNewMatches}
-          disabled={searchingMatches}
+          disabled={searchingMatches || !cvStatus.hasActiveCV}
           className="bg-gradient-to-r from-green-500 to-blue-600 text-white px-4 py-2 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity flex items-center space-x-2"
+          title={!cvStatus.hasActiveCV ? 'Please upload a CV first' : 'Search for jobs based on your CV'}
         >
           {searchingMatches && (
             <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
@@ -153,6 +183,35 @@ const JobRecommendations: React.FC = () => {
           <span>{searchingMatches ? 'Finding...' : 'Find New Matches'}</span>
         </button>
       </div>
+
+      {/* CV Status Warning */}
+      {!cvStatus.hasActiveCV && (
+        <div className="mb-4 p-3 bg-yellow-100 border border-yellow-300 text-yellow-700 rounded-lg">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            No active CV found. Please upload your CV first to get personalized job recommendations.
+          </div>
+        </div>
+      )}
+
+      {/* CV Info */}
+      {cvStatus.hasActiveCV && cvStatus.cvInfo && (
+        <div className="mb-4 p-3 bg-green-100 border border-green-300 text-green-700 rounded-lg">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span>
+              Using CV: <strong>{cvStatus.cvInfo.original_filename}</strong> 
+              {cvStatus.cvInfo.job_category && (
+                <span className="ml-2 text-sm">({cvStatus.cvInfo.job_category})</span>
+              )}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Error Message */}
       {error && (
@@ -170,7 +229,10 @@ const JobRecommendations: React.FC = () => {
             </svg>
           </div>
           <h4 className="text-lg font-medium text-gray-900 mb-2">No Job Matches Found</h4>
-          <p className="text-gray-600 mb-4">Click "Find New Matches" to discover jobs that match your CV</p>
+          <p className="text-gray-600 mb-4">
+            Click "Find New Matches" to automatically search for jobs based on your CV.
+            The system will use your skills, experience, and preferences to find relevant opportunities.
+          </p>
         </div>
       ) : (
         <div className="space-y-4">

@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from '../layout';
 import WorkflowSteps from './WorkflowSteps';
 import DashboardOverview from './DashboardOverview';
 import { UserProfile } from '../profile';
-import { JobApplicationDashboard, ApplicationTracker } from '../jobs';
+import { JobApplicationDashboard, ApplicationTracker, JobSearchExample } from '../jobs';
 import { useJobSearch } from '../../src/hooks/useJobSearch';
 import EnhancedChatbot from '../../components/shared/EnhancedChatbot';
 import { EmailManagement } from '../email';
 import ThemeToggle from '../shared/ThemeToggle';
+import NotificationBell from './NotificationBell';
 
 
 // Settings Component
@@ -24,6 +25,55 @@ const Settings: React.FC = () => {
     jobTypes: ['full-time', 'contract']
   });
 
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch('/api/preferences/', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setNotifications(data.notifications);
+          setPreferences(data.preferences);
+        }
+      } catch (error) {
+        console.error('Failed to fetch settings:', error);
+      }
+    };
+    fetchSettings();
+  }, []);
+
+  const saveSettings = async (newSettings: any) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      await fetch('/api/preferences/', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(newSettings),
+      });
+    } catch (error) {
+      console.error('Error saving settings:', error);
+    }
+  };
+
+  const handleNotificationChange = (key: keyof typeof notifications, value: boolean) => {
+    const newNotifications = { ...notifications, [key]: value };
+    setNotifications(newNotifications);
+    saveSettings({ notifications: newNotifications, preferences });
+  };
+
+  const handlePreferenceChange = (key: keyof typeof preferences, value: any) => {
+    const newPreferences = { ...preferences, [key]: value };
+    setPreferences(newPreferences);
+    saveSettings({ preferences: newPreferences, notifications });
+  };
+
   return (
     <div className="space-y-6">
       {/* Notification Settings */}
@@ -39,7 +89,7 @@ const Settings: React.FC = () => {
               <p className="text-xs text-gray-500 dark:text-gray-400">Receive updates via email</p>
             </div>
             <button
-              onClick={() => setNotifications({...notifications, email: !notifications.email})}
+              onClick={() => handleNotificationChange('email', !notifications.email)}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                 notifications.email ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
               }`}
@@ -55,7 +105,7 @@ const Settings: React.FC = () => {
               <p className="text-xs text-gray-500 dark:text-gray-400">Receive browser notifications</p>
             </div>
             <button
-              onClick={() => setNotifications({...notifications, push: !notifications.push})}
+              onClick={() => handleNotificationChange('push', !notifications.push)}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                 notifications.push ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
               }`}
@@ -98,7 +148,7 @@ const Settings: React.FC = () => {
               <p className="text-xs text-gray-500 dark:text-gray-400">Automatically apply to matching jobs</p>
             </div>
             <button
-              onClick={() => setPreferences({...preferences, autoApply: !preferences.autoApply})}
+              onClick={() => handlePreferenceChange('autoApply', !preferences.autoApply)}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                 preferences.autoApply ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
               }`}
@@ -113,7 +163,7 @@ const Settings: React.FC = () => {
             <input
               type="number"
               value={preferences.dailyLimit}
-              onChange={(e) => setPreferences({...preferences, dailyLimit: parseInt(e.target.value)})}
+              onChange={(e) => handlePreferenceChange('dailyLimit', parseInt(e.target.value))}
               className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
               min="1"
               max="50"
@@ -145,6 +195,8 @@ const Dashboard: React.FC = () => {
         return <DashboardOverview />;
       case 'workflow':
         return <WorkflowSteps />;
+      case 'jobsearch':
+        return <JobSearchExample />;
       case 'applications':
         return <ApplicationTracker />;
       case 'emails':
@@ -153,7 +205,6 @@ const Dashboard: React.FC = () => {
         return <UserProfile />;
       case 'chatbot':
         return <EnhancedChatbot />;
-
       case 'settings':
         return <Settings />;
       default:
@@ -167,6 +218,8 @@ const Dashboard: React.FC = () => {
         return 'Dashboard';
       case 'workflow':
         return 'Job Search Workflow';
+      case 'jobsearch':
+        return 'AI Job Search';
       case 'applications':
         return 'Application Tracker';
       case 'emails':
@@ -214,6 +267,7 @@ const Dashboard: React.FC = () => {
 
             {/* User Info */}
             <div className="flex items-center space-x-3">
+              <NotificationBell />
               <div className="text-right">
                 <div className="text-sm font-medium text-gray-900 dark:text-white">
                   {JSON.parse(localStorage.getItem('user') || '{}').full_name || 'User'}

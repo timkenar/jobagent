@@ -4,6 +4,10 @@ export interface JobPosting {
   snippet: string;
   url: string;
   companyName?: string;
+  location?: string;
+  matchScore?: number;
+  matchedSkills?: string[];
+  matchReasons?: string[];
   rawGroundingChunk?: GroundingChunk;
 }
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { JobPosting, GeneratedEmail } from '../../types'; // Assuming types.ts is in the same directory
-import { searchOnlineJobs, generateTailoredEmail, signOutUser, checkBackendStatus } from '../../services/geminiService'; // Assuming geminiService.ts is in services directory
+import { searchOnlineJobs, searchJobsWithCV, generateTailoredEmail, signOutUser, checkBackendStatus, checkCVStatus } from '../../services/geminiService'; // Assuming geminiService.ts is in services directory
 import { DEFAULT_EMAIL_TEMPLATE } from '../constants/emailTemplate'; // Assuming emailTemplate.ts is in constants directory
 
 // Debounce utility
@@ -39,6 +39,8 @@ interface JobSearchState {
   isSignedIn: boolean;
   isEmailSending: boolean; // New state for email sending
   emailSentMessage: string | null; // New state for email sent message
+  hasUploadedCV: boolean; // New state for CV status
+  cvInfo: any | null; // New state for CV information
 }
 
 interface JobSearchActions {
@@ -46,12 +48,14 @@ interface JobSearchActions {
   setEmailTemplate: (template: string) => void;
   setJobSearchQuery: (query: string) => void;
   handleSearchJobs: () => Promise<void>;
+  handleSearchJobsWithCV: () => Promise<void>; // New CV-based search action
   handleGenerateEmail: (job: JobPosting) => Promise<void>;
   handleCopyToClipboard: () => void;
   handleSignInSuccess: (token: string) => void;
   handleSignOut: () => Promise<void>;
   handleCloseModal: () => void;
   handleSendEmail: (recipientEmail: string, subject: string, body: string) => Promise<void>; // New action for sending email
+  refreshCVStatus: () => Promise<void>; // New action to check CV status
 }
 
 export const useJobSearch = (): JobSearchState & JobSearchActions => {
@@ -72,10 +76,27 @@ export const useJobSearch = (): JobSearchState & JobSearchActions => {
   const [emailCopied, setEmailCopied] = useState<boolean>(false);
   const [isEmailSending, setIsEmailSending] = useState<boolean>(false); // Initialize new state
   const [emailSentMessage, setEmailSentMessage] = useState<string | null>(null); // Initialize new state
+  const [hasUploadedCV, setHasUploadedCV] = useState<boolean>(false); // Initialize CV status state
+  const [cvInfo, setCvInfo] = useState<any | null>(null); // Initialize CV info state
 
   useEffect(() => {
     checkBackendStatus().then(setIsBackendAvailable);
-  }, []);
+    if (authToken) {
+      refreshCVStatus();
+    }
+  }, [authToken]);
+
+  const refreshCVStatus = async () => {
+    if (!authToken) return;
+    try {
+      const cvStatus = await checkCVStatus(authToken);
+      setHasUploadedCV(cvStatus.hasActiveCV);
+      setCvInfo(cvStatus.cvInfo || null);
+    } catch (error) {
+      setHasUploadedCV(false);
+      setCvInfo(null);
+    }
+  };
 
   useEffect(() => {
     if (cvText) localStorage.setItem('cvText', cvText);
@@ -120,8 +141,8 @@ export const useJobSearch = (): JobSearchState & JobSearchActions => {
         setError('Please enter a job search query.');
         return;
       }
-      if (!cvText.trim()) {
-        setError('Please enter your CV details.');
+      if (!cvText.trim() && !hasUploadedCV) {
+        setError('Please upload a CV or enter your CV details.');
         return;
       }
       if (!authToken) {
@@ -168,7 +189,55 @@ export const useJobSearch = (): JobSearchState & JobSearchActions => {
         setIsLoadingSearch(false);
       }
     }, 1000),
-    [jobSearchQuery, cvText, authToken]
+    [jobSearchQuery, cvText, authToken, hasUploadedCV]
+  );
+
+  const handleSearchJobsWithCV = useCallback(
+    debounce(async () => {
+      if (!authToken) {
+        setError('You must be signed in to search for jobs.');
+        return;
+      }
+      if (!hasUploadedCV) {
+        setError('Please upload a CV first to use CV-based job search.');
+        return;
+      }
+
+      // Rate limiting
+      const userId = authToken.slice(0, 10);
+      const now = Date.now();
+      const lastTime = lastRequestTime.get(userId) || 0;
+      if (now - lastTime < MIN_REQUEST_INTERVAL) {
+        setError('Please wait a few seconds before searching again.');
+        return;
+      }
+      lastRequestTime.set(userId, now);
+
+      setIsLoadingSearch(true);
+      setError(null);
+      setJobResults([]);
+      try {
+        // Use CV-based search with optional job title from search query
+        const results = await searchJobsWithCV(
+          authToken,
+          jobSearchQuery.trim() || undefined,
+          undefined // Let backend use CV preferred locations
+        );
+        setJobResults(results);
+        if (results.length === 0) {
+          setError('No jobs found matching your CV. Our AI will continue learning about your preferences.');
+        }
+      } catch (e) {
+        setError(
+          e.message.includes('429')
+            ? 'Quota exceeded for job search. Please wait a few minutes and try again.'
+            : e.message || 'An unknown error occurred during CV-based job search.'
+        );
+      } finally {
+        setIsLoadingSearch(false);
+      }
+    }, 1000),
+    [jobSearchQuery, authToken, hasUploadedCV]
   );
 
   const handleGenerateEmail = useCallback(
@@ -282,15 +351,19 @@ export const useJobSearch = (): JobSearchState & JobSearchActions => {
     isSignedIn,
     isEmailSending, // Expose new state
     emailSentMessage, // Expose new state
+    hasUploadedCV, // Expose new state
+    cvInfo, // Expose new state
     setCvText,
     setEmailTemplate,
     setJobSearchQuery,
     handleSearchJobs,
+    handleSearchJobsWithCV, // Expose new action
     handleGenerateEmail,
     handleCopyToClipboard,
     handleSignInSuccess,
     handleSignOut,
     handleCloseModal,
     handleSendEmail, // Expose new action
+    refreshCVStatus, // Expose new action
   };
 };

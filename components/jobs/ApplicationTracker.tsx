@@ -2,6 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useGmail } from '../../src/contexts/GmailContext';
 import axios from 'axios';
 
+interface EmailCategory {
+  category: 'application' | 'interview' | 'offer' | 'rejection' | 'follow_up' | 'other';
+  date: string;
+  subject: string;
+  from: string;
+}
+
 interface JobApplication {
   id: number;
   job_title: string;
@@ -21,6 +28,8 @@ interface JobApplication {
   interviewDate?: string;
   emailCount?: number;
   lastEmailDate?: string;
+  emailCategories?: EmailCategory[];
+  progressScore?: number;
 }
 
 const ApplicationTracker: React.FC = () => {
@@ -61,6 +70,43 @@ const ApplicationTracker: React.FC = () => {
 
       const backendApps = response.data;
       
+      // Enhanced email categorization logic
+      const categorizeEmail = (email: any): EmailCategory['category'] => {
+        const subject = email.subject?.toLowerCase() || '';
+        const body = email.body?.toLowerCase() || email.snippet?.toLowerCase() || '';
+        const content = subject + ' ' + body;
+        
+        if (content.includes('interview') || content.includes('schedule') || content.includes('meeting') || content.includes('call')) {
+          return 'interview';
+        } else if (content.includes('offer') || content.includes('congratulations') || content.includes('pleased to') || content.includes('excited to offer')) {
+          return 'offer';
+        } else if (content.includes('reject') || content.includes('unfortunately') || content.includes('not selected') || content.includes('moving forward with other')) {
+          return 'rejection';
+        } else if (content.includes('follow') || content.includes('update') || content.includes('checking in')) {
+          return 'follow_up';
+        } else if (content.includes('application') || content.includes('received') || content.includes('reviewing') || content.includes('thank you for applying')) {
+          return 'application';
+        }
+        return 'other';
+      };
+
+      // Calculate progress score based on email categories
+      const calculateProgressScore = (categories: EmailCategory[]): number => {
+        const weights = {
+          application: 20,
+          follow_up: 40,
+          interview: 70,
+          offer: 95,
+          rejection: 0,
+          other: 10
+        };
+        
+        if (categories.length === 0) return 15; // Just applied
+        
+        const maxScore = Math.max(...categories.map(cat => weights[cat.category]));
+        return maxScore;
+      };
+
       // Enhance applications with email data
       const enhancedApps = backendApps.map((app: any) => {
         const appEmails = gmailEmails.filter(email => 
@@ -70,30 +116,47 @@ const ApplicationTracker: React.FC = () => {
           (app.recruiter_email && email.sender.includes(app.recruiter_email))
         );
         
+        // Create email categories with details
+        const emailCategories: EmailCategory[] = appEmails.map(email => ({
+          category: categorizeEmail(email),
+          date: email.date,
+          subject: email.subject,
+          from: email.sender
+        })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        
         // Determine status from latest email
         let emailStatus = app.status;
         let lastEmailDate = null;
         let nextAction = null;
         
-        if (appEmails.length > 0) {
-          const latestEmail = appEmails.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-          lastEmailDate = latestEmail.date;
+        if (emailCategories.length > 0) {
+          const latestCategory = emailCategories[0];
+          lastEmailDate = latestCategory.date;
           
-          const emailContent = (latestEmail.subject + ' ' + latestEmail.snippet).toLowerCase();
-          
-          if (emailContent.includes('interview') || emailContent.includes('schedule')) {
-            emailStatus = 'interview';
-            nextAction = 'Prepare for interview';
-          } else if (emailContent.includes('offer') || emailContent.includes('congratulations')) {
-            emailStatus = 'offer';
-            nextAction = 'Review offer details';
-          } else if (emailContent.includes('reject') || emailContent.includes('unfortunately')) {
-            emailStatus = 'rejected';
-          } else if (emailContent.includes('received') || emailContent.includes('reviewing')) {
-            emailStatus = 'viewed';
-            nextAction = 'Follow up in 1-2 weeks';
+          switch (latestCategory.category) {
+            case 'interview':
+              emailStatus = 'interview';
+              nextAction = 'Prepare for interview';
+              break;
+            case 'offer':
+              emailStatus = 'offer';
+              nextAction = 'Review offer details';
+              break;
+            case 'rejection':
+              emailStatus = 'rejected';
+              nextAction = 'Learn from feedback';
+              break;
+            case 'application':
+              emailStatus = 'viewed';
+              nextAction = 'Follow up in 1-2 weeks';
+              break;
+            case 'follow_up':
+              nextAction = 'Continue dialogue';
+              break;
           }
         }
+        
+        const progressScore = calculateProgressScore(emailCategories);
         
         return {
           ...app,
@@ -101,6 +164,8 @@ const ApplicationTracker: React.FC = () => {
           emailCount: appEmails.length,
           lastEmailDate,
           nextAction: nextAction || app.notes,
+          emailCategories,
+          progressScore,
           // Map backend fields to frontend interface
           appliedDate: app.date_applied,
           lastUpdate: app.last_activity || app.updated_at,
@@ -187,6 +252,47 @@ const ApplicationTracker: React.FC = () => {
       console.error('Error updating application status:', err);
       setError('Failed to update application status');
     }
+  };
+
+  const getCategoryIcon = (category: EmailCategory['category']) => {
+    switch (category) {
+      case 'application':
+        return '📄';
+      case 'interview':
+        return '🎯';
+      case 'offer':
+        return '🎉';
+      case 'rejection':
+        return '❌';
+      case 'follow_up':
+        return '🔄';
+      default:
+        return '📧';
+    }
+  };
+
+  const getCategoryColor = (category: EmailCategory['category']) => {
+    switch (category) {
+      case 'application':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
+      case 'interview':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400';
+      case 'offer':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
+      case 'rejection':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
+      case 'follow_up':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+    }
+  };
+
+  const getProgressColor = (score: number) => {
+    if (score >= 80) return 'bg-green-500';
+    if (score >= 60) return 'bg-yellow-500';
+    if (score >= 30) return 'bg-blue-500';
+    return 'bg-gray-400';
   };
 
   const filteredApplications = applications.filter(app => {
@@ -312,6 +418,12 @@ const ApplicationTracker: React.FC = () => {
           <div className="text-sm text-gray-600 dark:text-gray-400">Offers</div>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+          <div className="text-2xl font-bold text-orange-600">
+            {applications.filter(app => app.progressScore && app.progressScore > 50).length}
+          </div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">Active Progress</div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
           <div className="text-2xl font-bold text-red-600">{statusCounts.rejected || 0}</div>
           <div className="text-sm text-gray-600 dark:text-gray-400">Rejected</div>
         </div>
@@ -400,21 +512,60 @@ const ApplicationTracker: React.FC = () => {
               {sortedApplications.map((app) => (
                 <tr key={app.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">
-                        {app.company}
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {app.company}
+                        </div>
+                        {app.progressScore && (
+                          <div className="flex items-center space-x-2">
+                            <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                              <div 
+                                className={`h-2 rounded-full ${getProgressColor(app.progressScore)}`}
+                                style={{ width: `${app.progressScore}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {app.progressScore}%
+                            </span>
+                          </div>
+                        )}
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
                         {app.job_title}
                       </div>
-                      {app.emailCount && app.emailCount > 0 && (
-                        <div className="text-xs text-blue-600 dark:text-blue-400 flex items-center">
-                          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 7.89a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                          </svg>
-                          {app.emailCount} emails
-                        </div>
-                      )}
+                      <div className="flex items-center justify-between mt-1">
+                        {app.emailCount && app.emailCount > 0 ? (
+                          <div className="flex items-center space-x-1">
+                            <svg className="w-3 h-3 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 7.89a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            <span className="text-xs text-blue-600 dark:text-blue-400">
+                              {app.emailCount} emails
+                            </span>
+                          </div>
+                        ) : (
+                          <div></div>
+                        )}
+                        {app.emailCategories && app.emailCategories.length > 0 && (
+                          <div className="flex items-center space-x-1">
+                            {app.emailCategories.slice(0, 3).map((category, idx) => (
+                              <span 
+                                key={idx}
+                                className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${getCategoryColor(category.category)}`}
+                                title={`${category.subject} (${new Date(category.date).toLocaleDateString()})`}
+                              >
+                                {getCategoryIcon(category.category)}
+                              </span>
+                            ))}
+                            {app.emailCategories.length > 3 && (
+                              <span className="text-xs text-gray-400 dark:text-gray-500">
+                                +{app.emailCategories.length - 3}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
@@ -476,9 +627,24 @@ const ApplicationTracker: React.FC = () => {
                   </h2>
                   <p className="text-gray-600 dark:text-gray-400">{selectedApp.company}</p>
                   {selectedApp.emailCount && selectedApp.emailCount > 0 && (
-                    <p className="text-sm text-blue-600 dark:text-blue-400">
-                      {selectedApp.emailCount} related emails found
-                    </p>
+                    <div className="flex items-center space-x-4 mt-2">
+                      <p className="text-sm text-blue-600 dark:text-blue-400">
+                        {selectedApp.emailCount} related emails found
+                      </p>
+                      {selectedApp.progressScore && (
+                        <div className="flex items-center space-x-2">
+                          <div className="w-20 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                            <div 
+                              className={`h-2 rounded-full ${getProgressColor(selectedApp.progressScore)}`}
+                              style={{ width: `${selectedApp.progressScore}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-sm text-gray-600 dark:text-gray-400">
+                            {selectedApp.progressScore}% progress
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
                 <button
@@ -546,6 +712,29 @@ const ApplicationTracker: React.FC = () => {
                   <p className="text-gray-900 dark:text-white">
                     {new Date(selectedApp.interviewDate).toLocaleDateString()}
                   </p>
+                </div>
+              )}
+
+              {selectedApp.emailCategories && selectedApp.emailCategories.length > 0 && (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Email Timeline</label>
+                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                    {selectedApp.emailCategories.map((category, index) => (
+                      <div key={index} className="flex items-center space-x-3 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getCategoryColor(category.category)}`}>
+                          {getCategoryIcon(category.category)} {category.category}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-gray-900 dark:text-white truncate">
+                            {category.subject}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {category.from} • {new Date(category.date).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
