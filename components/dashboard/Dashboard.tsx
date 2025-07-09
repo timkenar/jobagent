@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Sidebar } from '../layout';
+import { ResponsiveLayout } from '../layout';
 import WorkflowSteps from './WorkflowSteps';
 import DashboardOverview from './DashboardOverview';
 import { UserProfile } from '../profile';
-import { JobApplicationDashboard, ApplicationTracker, JobSearchExample } from '../jobs';
+import { JobApplicationDashboard, ApplicationTracker } from '../jobs';
 import { useJobSearch } from '../../src/hooks/useJobSearch';
 import EnhancedChatbot from '../../components/shared/EnhancedChatbot';
 import { EmailManagement } from '../email';
+import { AutomationDashboard } from '../automation';
 import ThemeToggle from '../shared/ThemeToggle';
 import NotificationBell from './NotificationBell';
 
@@ -177,13 +178,24 @@ const Settings: React.FC = () => {
 
 const Dashboard: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string>('dashboard');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode');
+    return saved ? JSON.parse(saved) : false;
+  });
   
   const {
     isSignedIn,
     authToken,
     handleSignOut,
+    isLoadingSearch,
   } = useJobSearch();
+
+  // Toggle dark mode
+  const toggleDarkMode = () => {
+    const newDarkMode = !darkMode;
+    setDarkMode(newDarkMode);
+    localStorage.setItem('darkMode', JSON.stringify(newDarkMode));
+  };
 
   if (!isSignedIn) {
     return null; // This will be handled by App.tsx
@@ -195,10 +207,12 @@ const Dashboard: React.FC = () => {
         return <DashboardOverview />;
       case 'workflow':
         return <WorkflowSteps />;
-      case 'jobsearch':
-        return <JobSearchExample />;
+      // case 'jobsearch':
+      //   return <JobSearchExample />;
       case 'applications':
         return <ApplicationTracker />;
+      case 'automation':
+        return <AutomationDashboard user={{ id: 1, email: 'user@example.com' }} />;
       case 'emails':
         return <EmailManagement />;
       case 'profile':
@@ -217,11 +231,13 @@ const Dashboard: React.FC = () => {
       case 'dashboard':
         return 'Dashboard';
       case 'workflow':
-        return 'Job Search Workflow';
+        return 'Setup Workflow';
       case 'jobsearch':
         return 'AI Job Search';
       case 'applications':
         return 'Application Tracker';
+      case 'automation':
+        return 'Job Automation';
       case 'emails':
         return 'Email Management';
       case 'profile':
@@ -234,63 +250,53 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Sidebar */}
-      <Sidebar
-        activeSection={activeSection}
-        setActiveSection={setActiveSection}
-        collapsed={sidebarCollapsed}
-        setCollapsed={setSidebarCollapsed}
-        onSignOut={handleSignOut}
-      />
-
-      {/* Main Content */}
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${
-        sidebarCollapsed ? 'ml-16' : 'ml-64'
-      }`}>
-        {/* Header */}
-        <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
+    <ResponsiveLayout
+      activeSection={activeSection}
+      setActiveSection={setActiveSection}
+      onSignOut={handleSignOut}
+      isSigningOut={isLoadingSearch}
+      darkMode={darkMode}
+      onThemeToggle={toggleDarkMode}
+    >
+      <div className="min-h-screen">
+        {/* Desktop Header - Only show on desktop */}
+        <div className="hidden md:block">
+          <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-6 py-4 mb-6">
+            <div className="flex items-center justify-between">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 {getSectionTitle()}
               </h1>
-            </div>
-
-            {/* User Info */}
-            <div className="flex items-center space-x-3">
-              <NotificationBell />
-              <div className="text-right">
-                <div className="text-sm font-medium text-gray-900 dark:text-white">
-                  {JSON.parse(localStorage.getItem('user') || '{}').full_name || 'User'}
+              <div className="flex items-center space-x-3">
+                <NotificationBell />
+                <div className="text-right">
+                  <div className="text-sm font-medium text-gray-900 dark:text-white">
+                    {JSON.parse(localStorage.getItem('user') || '{}').full_name || 'User'}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {JSON.parse(localStorage.getItem('user') || '{}').email || ''}
+                  </div>
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
-                  {JSON.parse(localStorage.getItem('user') || '{}').email || ''}
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-medium">
+                    {(JSON.parse(localStorage.getItem('user') || '{}').full_name || 'U')[0].toUpperCase()}
+                  </span>
                 </div>
               </div>
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-medium">
-                  {(JSON.parse(localStorage.getItem('user') || '{}').full_name || 'U')[0].toUpperCase()}
-                </span>
-              </div>
             </div>
-          </div>
-        </header>
+          </header>
+        </div>
 
-        {/* Main Content Area */}
-        <main className="flex-1 overflow-auto p-6">
+        {/* Main Content */}
+        <div className="px-4 md:px-6">
           {renderMainContent()}
-        </main>
+        </div>
       </div>
-    </div>
+      
+      {/* Chatbot - Position adjusted for mobile */}
+      <div className="fixed bottom-20 md:bottom-4 right-4 z-50">
+        <EnhancedChatbot />
+      </div>
+    </ResponsiveLayout>
   );
 };
 

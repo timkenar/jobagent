@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { JobPosting, GeneratedEmail } from '../../types'; // Assuming types.ts is in the same directory
-import { searchOnlineJobs, searchJobsWithCV, generateTailoredEmail, signOutUser, checkBackendStatus, checkCVStatus } from '../../services/geminiService'; // Assuming geminiService.ts is in services directory
+import { searchOnlineJobs, searchJobsWithCV, generateTailoredEmail, signOutUser, checkBackendStatus, checkCVStatus } from '../../services/geminiService';
 import { DEFAULT_EMAIL_TEMPLATE } from '../constants/emailTemplate'; // Assuming emailTemplate.ts is in constants directory
 
 // Debounce utility
@@ -116,23 +116,46 @@ export const useJobSearch = (): JobSearchState & JobSearchActions => {
   };
 
   const handleSignOut = async () => {
-    if (authToken) {
-      try {
-        await signOutUser(authToken);
-      } catch (e) {
-        console.warn('Sign out API call failed, signing out client-side only.', e);
+    try {
+      // Show loading state
+      setIsLoadingSearch(true);
+      setError(null);
+      
+      if (authToken) {
+        try {
+          await signOutUser(authToken);
+        } catch (e) {
+          console.warn('Sign out API call failed, signing out client-side only.', e);
+        }
       }
+      
+      // Clear all localStorage items
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      localStorage.removeItem('aiAgentConfig');
+      localStorage.removeItem('jobSearchConfig');
+      localStorage.removeItem('jobApplications');
+      localStorage.removeItem('aiAgentAccounts');
+      
+      // Reset all state
+      setAuthToken(null);
+      setIsSignedIn(false);
+      setJobSearchQuery('');
+      setJobResults([]);
+      setSelectedJobForEmail(null);
+      setGeneratedEmail(null);
+      setError(null);
+      setHasUploadedCV(false);
+      setCvInfo(null);
+      setEmailSentMessage(null);
+      
+      // Force a page reload to ensure clean state
+      window.location.href = '/signin';
+    } catch (error) {
+      console.error('Error during sign out:', error);
+      setError('Error signing out. Please try again.');
+      setIsLoadingSearch(false);
     }
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
-    setAuthToken(null);
-    setIsSignedIn(false);
-    setJobSearchQuery('');
-    setJobResults([]);
-    setSelectedJobForEmail(null);
-    setGeneratedEmail(null);
-    setError(null);
-    setEmailSentMessage(null); // Clear email sent message on sign out
   };
 
   const handleSearchJobs = useCallback(

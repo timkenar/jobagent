@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_CONFIG } from '../../src/config/api';
 
 interface EmailVerificationRequiredProps {
   email: string;
@@ -21,7 +22,7 @@ const EmailVerificationRequired: React.FC<EmailVerificationRequiredProps> = ({
     setMessageType('');
 
     try {
-      const response = await fetch('http://localhost:8000/api/auth/resend-verification/', {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/auth/resend-verification/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

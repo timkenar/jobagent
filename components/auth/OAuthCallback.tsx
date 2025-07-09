@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { LoadingSpinner } from '../shared';
+import { API_CONFIG } from '../../src/config/api';
 
 const OAuthCallback: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -43,7 +44,7 @@ const OAuthCallback: React.FC = () => {
         setMessage('Connecting your Gmail account...');
 
         // Send the authorization code to the backend
-        const response = await fetch('http://localhost:8000/api/email-accounts/gmail-oauth-callback/', {
+        const response = await fetch(`${API_CONFIG.BASE_URL}/api/email-accounts/gmail-oauth-callback/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

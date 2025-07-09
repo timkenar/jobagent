@@ -1,752 +1,907 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import { Sun, Moon, ZoomIn, ZoomOut, RotateCcw, User, FileText, Bot, Search, Settings } from 'lucide-react';
+import ProfileForm from './ProfileForm';           // Step 1: User profile setup
+import CVUploadForm from './CVUploadForm';         // Step 2: CV/Resume upload
+import AIAgentForm from './AIAgentForm';           // Step 3: AI agent configuration
+import JobSearchForm from './JobSearchForm';       // Step 4: Job search automation
 
-// Types
-type NodeTypes = 'email' | 'profile' | 'jobSearch' | 'customAction';
-type NodeStatus = 'idle' | 'running' | 'completed' | 'error';
-type WorkflowStatus = 'idle' | 'running' | 'completed' | 'error';
+const WorkflowUI = () => {
+  const [darkMode, setDarkMode] = useState(false);
+  const [selectedNode, setSelectedNode] = useState(null);
+  const [activeForm, setActiveForm] = useState(null);
+  const [zoom, setZoom] = useState(1);
+  const [canvasPos, setCanvasPos] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [nodePositions, setNodePositions] = useState({});
+  const [draggedNode, setDraggedNode] = useState(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const canvasRef = useRef(null);
 
-interface NodeData {
-  id: string;
-  type: NodeTypes;
-  position: { x: number; y: number };
-  data: any;
-  status: NodeStatus;
-}
-
-interface Connection {
-  id: string;
-  source: string;
-  target: string;
-  status: 'idle' | 'active' | 'completed';
-}
-
-interface Workflow {
-  id: string;
-  name: string;
-  nodes: NodeData[];
-  connections: Connection[];
-  status: WorkflowStatus;
-}
-
-const WorkflowSteps: React.FC = () => {
-  // State for the workflow
-  const [workflow, setWorkflow] = useState<Workflow>({
-    id: uuidv4(),
-    name: 'New Workflow',
-    nodes: [],
-    connections: [],
-    status: 'idle'
+  // Check if device is mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+      if (window.innerWidth >= 768) {
+        setSidebarOpen(false);
+      }
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  
+  // Workflow state - initialize from localStorage with error handling
+  const [profileComplete, setProfileComplete] = useState(() => {
+    try {
+      const stored = localStorage.getItem('userProfile');
+      return stored && JSON.parse(stored).full_name ? true : false;
+    } catch (error) {
+      console.warn('Error loading profile data:', error);
+      return false;
+    }
+  });
+  const [cvUploaded, setCvUploaded] = useState(() => {
+    try {
+      const stored = localStorage.getItem('cvData');
+      return stored ? JSON.parse(stored).uploaded || false : false;
+    } catch (error) {
+      console.warn('Error loading CV data:', error);
+      return false;
+    }
+  });
+  const [aiAgentComplete, setAiAgentComplete] = useState(() => {
+    try {
+      const stored = localStorage.getItem('aiAgentConfig');
+      return stored && JSON.parse(stored).chatModel ? true : false;
+    } catch (error) {
+      console.warn('Error loading AI agent config:', error);
+      return false;
+    }
+  });
+  const [jobSearchComplete, setJobSearchComplete] = useState(() => {
+    try {
+      const stored = localStorage.getItem('jobSearchConfig');
+      return stored && JSON.parse(stored).keywords ? true : false;
+    } catch (error) {
+      console.warn('Error loading job search config:', error);
+      return false;
+    }
   });
 
-  // UI state
-  const [selectedNode, setSelectedNode] = useState<string | null>(null);
-  const [zoom, setZoom] = useState<number>(1);
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  const [isExecuting, setIsExecuting] = useState<boolean>(false);
-  const [executionHistory, setExecutionHistory] = useState<any[]>([]);
+  const nodes = [
+    { 
+      id: 'profile-setup', 
+      title: 'Profile Setup', 
+      icon: User, 
+      status: profileComplete ? 'completed' : 'current',
+      color: 'emerald',
+      description: 'Complete your user profile information',
+      formType: 'profile'
+    },
+    { 
+      id: 'cv-upload', 
+      title: 'CV Upload', 
+      icon: FileText, 
+      status: cvUploaded ? 'completed' : profileComplete ? 'current' : 'pending',
+      color: 'blue',
+      description: 'Upload and parse your resume/CV',
+      formType: 'cv'
+    },
+    { 
+      id: 'ai-agent-setup', 
+      title: 'AI Agent', 
+      icon: Bot, 
+      status: aiAgentComplete ? 'completed' : cvUploaded ? 'current' : 'pending',
+      color: 'purple',
+      description: 'Configure your AI assistant settings',
+      formType: 'ai'
+    },
+    { 
+      id: 'job-search', 
+      title: 'Job Search', 
+      icon: Search, 
+      status: jobSearchComplete ? 'completed' : aiAgentComplete ? 'current' : 'pending',
+      color: 'orange',
+      description: 'Set up automated job search parameters',
+      formType: 'search'
+    }
+  ];
 
-  // Refs
-  const canvasRef = useRef<HTMLDivElement>(null);
-  const [canvasPosition, setCanvasPosition] = useState({ x: 0, y: 0 });
-  const [isDraggingCanvas, setIsDraggingCanvas] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const connections = [
+    { from: 'profile-setup', to: 'cv-upload' },
+    { from: 'cv-upload', to: 'ai-agent-setup' },
+    { from: 'ai-agent-setup', to: 'job-search' }
+  ];
 
-  // Handle canvas drag
-  const handleCanvasMouseDown = (e: React.MouseEvent) => {
+  // Initialize node positions
+  useEffect(() => {
+    const initialPositions = {};
+    nodes.forEach((node, index) => {
+      initialPositions[node.id] = {
+        x: 200 + index * 250,
+        y: 200
+      };
+    });
+    setNodePositions(initialPositions);
+  }, []);
+
+  // Handle canvas wheel zoom
+  const handleCanvasWheel = (e) => {
+    e.preventDefault();
+    const delta = e.deltaY * -0.001;
+    const newZoom = Math.min(Math.max(zoom + delta, 0.5), 2);
+    setZoom(newZoom);
+  };
+
+  const handleCanvasMouseDown = (e) => {
     if (e.target === canvasRef.current) {
-      setIsDraggingCanvas(true);
+      setIsDragging(true);
       setDragStart({ x: e.clientX, y: e.clientY });
     }
   };
 
-  const handleCanvasMouseMove = (e: React.MouseEvent) => {
-    if (isDraggingCanvas) {
+  const handleCanvasMouseMove = (e) => {
+    if (isDragging) {
       const dx = e.clientX - dragStart.x;
       const dy = e.clientY - dragStart.y;
-      setCanvasPosition(prev => ({
-        x: prev.x + dx,
-        y: prev.y + dy
-      }));
+      setCanvasPos(prev => ({ x: prev.x + dx, y: prev.y + dy }));
       setDragStart({ x: e.clientX, y: e.clientY });
+    }
+    
+    if (draggedNode) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      const x = (e.clientX - rect.left - canvasPos.x) / zoom - 60;
+      const y = (e.clientY - rect.top - canvasPos.y) / zoom - 60;
+      setNodePositions(prev => ({
+        ...prev,
+        [draggedNode]: { x, y }
+      }));
     }
   };
 
   const handleCanvasMouseUp = () => {
-    setIsDraggingCanvas(false);
+    setIsDragging(false);
+    setDraggedNode(null);
   };
 
-  // Add a new node to the workflow
-  const addNode = (type: NodeTypes, position: { x: number; y: number }) => {
-    const newNode: NodeData = {
-      id: uuidv4(),
-      type,
-      position,
-      data: {},
-      status: 'idle'
-    };
-
-    setWorkflow(prev => ({
-      ...prev,
-      nodes: [...prev.nodes, newNode]
-    }));
+  const handleNodeMouseDown = (e, nodeId) => {
+    e.stopPropagation();
+    setDraggedNode(nodeId);
+    setSelectedNode(nodeId);
   };
 
-  // Remove a node
-  const removeNode = (nodeId: string) => {
-    setWorkflow(prev => ({
-      ...prev,
-      nodes: prev.nodes.filter(node => node.id !== nodeId),
-      connections: prev.connections.filter(
-        conn => conn.source !== nodeId && conn.target !== nodeId
-      )
-    }));
-    if (selectedNode === nodeId) setSelectedNode(null);
-  };
-
-  // Update node data
-  const updateNodeData = (nodeId: string, data: any) => {
-    setWorkflow(prev => ({
-      ...prev,
-      nodes: prev.nodes.map(node =>
-        node.id === nodeId ? { ...node, data } : node
-      )
-    }));
-  };
-
-  // Add a connection between nodes
-  const addConnection = (source: string, target: string) => {
-    // Check if connection already exists
-    const exists = workflow.connections.some(
-      conn => conn.source === source && conn.target === target
-    );
-    if (exists) return;
-
-    const newConnection: Connection = {
-      id: uuidv4(),
-      source,
-      target,
-      status: 'idle'
-    };
-
-    setWorkflow(prev => ({
-      ...prev,
-      connections: [...prev.connections, newConnection]
-    }));
-  };
-
-  // Remove a connection
-  const removeConnection = (connectionId: string) => {
-    setWorkflow(prev => ({
-      ...prev,
-      connections: prev.connections.filter(conn => conn.id !== connectionId)
-    }));
-  };
-
-  // Execute the workflow
-  const executeWorkflow = async () => {
-    setIsExecuting(true);
-    setWorkflow(prev => ({ ...prev, status: 'running' }));
-    
-    // Reset all node statuses
-    setWorkflow(prev => ({
-      ...prev,
-      nodes: prev.nodes.map(node => ({ ...node, status: 'idle' })),
-      connections: prev.connections.map(conn => ({ ...conn, status: 'idle' }))
-    }));
-
-    // Find start nodes (nodes with no incoming connections)
-    const startNodes = workflow.nodes.filter(node => 
-      !workflow.connections.some(conn => conn.target === node.id)
-    );
-
-    // Execute nodes in order (this is a simplified execution)
-    for (const node of startNodes) {
-      await executeNode(node);
-    }
-
-    setWorkflow(prev => ({ ...prev, status: 'completed' }));
-    setIsExecuting(false);
-  };
-
-  // Execute a single node
-  const executeNode = async (node: NodeData) => {
-    // Update node status
-    setWorkflow(prev => ({
-      ...prev,
-      nodes: prev.nodes.map(n => 
-        n.id === node.id ? { ...n, status: 'running' } : n
-      )
-    }));
-
-    // Simulate node execution (replace with actual logic)
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Mark node as completed
-    setWorkflow(prev => ({
-      ...prev,
-      nodes: prev.nodes.map(n => 
-        n.id === node.id ? { ...n, status: 'completed' } : n
-      )
-    }));
-
-    // Find and execute connected nodes
-    const outgoingConnections = workflow.connections.filter(
-      conn => conn.source === node.id
-    );
-    
-    for (const connection of outgoingConnections) {
-      // Update connection status
-      setWorkflow(prev => ({
-        ...prev,
-        connections: prev.connections.map(conn => 
-          conn.id === connection.id ? { ...conn, status: 'active' } : conn
-        )
-      }));
-
-      const targetNode = workflow.nodes.find(n => n.id === connection.target);
-      if (targetNode) {
-        await executeNode(targetNode);
-      }
+  const handleNodeClick = (nodeId) => {
+    setSelectedNode(nodeId);
+    const node = nodes.find(n => n.id === nodeId);
+    if (node && (node.status === 'current' || node.status === 'completed')) {
+      setActiveForm(node.formType);
     }
   };
 
-  // Simple Node Component
-  const SimpleNode: React.FC<{
-    node: NodeData;
-    isSelected: boolean;
-    onSelect: () => void;
-    onDelete: () => void;
-    theme: 'light' | 'dark';
-  }> = ({ node, isSelected, onSelect, onDelete, theme }) => {
-    const getNodeInfo = () => {
-      switch (node.type) {
-        case 'email':
-          return { title: 'Email', color: 'bg-blue-500', icon: '📧' };
-        case 'profile':
-          return { title: 'Profile', color: 'bg-purple-500', icon: '👤' };
-        case 'jobSearch':
-          return { title: 'Job Search', color: 'bg-green-500', icon: '🔍' };
-        case 'customAction':
-          return { title: 'Custom', color: 'bg-yellow-500', icon: '⚙️' };
+  // Form completion handlers with error handling
+  const handleProfileComplete = (data?: any) => {
+    try {
+      if (data) {
+        localStorage.setItem('userProfile', JSON.stringify(data));
+        console.log('Profile data saved successfully');
       }
-    };
+      setProfileComplete(true);
+      setActiveForm(null);
+    } catch (error) {
+      console.error('Error saving profile data:', error);
+      alert('Failed to save profile data. Please try again.');
+    }
+  };
 
-    const nodeInfo = getNodeInfo();
+  const handleCVUploadComplete = (data?: any) => {
+    try {
+      if (data) {
+        const cvData = { ...data, uploaded: true, uploadDate: new Date().toISOString() };
+        localStorage.setItem('cvData', JSON.stringify(cvData));
+        console.log('CV data saved successfully');
+      }
+      setCvUploaded(true);
+      setActiveForm(null);
+    } catch (error) {
+      console.error('Error saving CV data:', error);
+      alert('Failed to save CV data. Please try again.');
+    }
+  };
 
-    return (
-      <div
-        onClick={onSelect}
-        className={`absolute w-32 h-16 rounded-lg border-2 cursor-pointer transition-all ${
-          isSelected ? 'border-blue-500 shadow-lg' : 'border-gray-300'
-        } ${
-          theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'
-        }`}
-        style={{
-          left: node.position.x,
-          top: node.position.y
-        }}
-      >
-        <div className="flex items-center justify-center h-full p-2">
-          <div className={`${nodeInfo.color} text-white p-1 rounded mr-2 text-xs`}>
-            {nodeInfo.icon}
+  const handleAIAgentComplete = (config: any) => {
+    try {
+      if (config) {
+        localStorage.setItem('aiAgentConfig', JSON.stringify(config));
+        console.log('AI agent configuration saved successfully');
+      }
+      setAiAgentComplete(true);
+      setActiveForm(null);
+    } catch (error) {
+      console.error('Error saving AI agent configuration:', error);
+      alert('Failed to save AI agent configuration. Please try again.');
+    }
+  };
+
+  const handleJobSearchComplete = (config: any) => {
+    try {
+      if (config) {
+        localStorage.setItem('jobSearchConfig', JSON.stringify(config));
+        console.log('Job search configuration saved successfully');
+      }
+      setJobSearchComplete(true);
+      setActiveForm(null);
+    } catch (error) {
+      console.error('Error saving job search configuration:', error);
+      alert('Failed to save job search configuration. Please try again.');
+    }
+  };
+
+  const closeForm = () => {
+    setActiveForm(null);
+  };
+
+  const getConnectionPath = (fromId, toId) => {
+    const from = nodePositions[fromId];
+    const to = nodePositions[toId];
+    if (!from || !to) return '';
+
+    const startX = from.x + 60;
+    const startY = from.y + 60;
+    const endX = to.x + 60;
+    const endY = to.y + 60;
+
+    const controlX = (startX + endX) / 2;
+    return `M ${startX} ${startY} Q ${controlX} ${startY} ${endX} ${endY}`;
+  };
+
+  const resetView = () => {
+    setZoom(1);
+    setCanvasPos({ x: 0, y: 0 });
+  };
+
+  const selectedNodeData = nodes.find(n => n.id === selectedNode);
+  const completedNodes = nodes.filter(n => n.status === 'completed').length;
+
+  // Form components using actual imported components
+  const renderForm = () => {
+    if (!activeForm) return null;
+
+    const formComponents = {
+      profile: (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className={`rounded-xl shadow-xl w-full max-h-[90vh] overflow-y-auto ${
+            isMobile ? 'max-w-full mx-2' : 'max-w-2xl'
+          } ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}>
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold">Profile Setup</h3>
+                <button
+                  onClick={closeForm}
+                  className={`text-gray-500 hover:text-gray-700 ${darkMode ? 'hover:text-gray-300' : ''}`}
+                >
+                  ✕
+                </button>
+              </div>
+              <ProfileForm 
+                userProfile={(() => {
+                  try {
+                    return JSON.parse(localStorage.getItem('userProfile') || '{}');
+                  } catch (error) {
+                    console.warn('Error parsing user profile:', error);
+                    return {};
+                  }
+                })()}
+                onComplete={handleProfileComplete}
+                onCancel={closeForm}
+              />
+            </div>
           </div>
-          <div className="text-xs font-medium">{nodeInfo.title}</div>
         </div>
-        {isSelected && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs"
-          >
-            ×
-          </button>
-        )}
-      </div>
-    );
-  };
+      ),
+      cv: (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className={`rounded-xl shadow-xl w-full max-h-[90vh] overflow-y-auto ${
+            isMobile ? 'max-w-full mx-2' : 'max-w-2xl'
+          } ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}>
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold">CV Upload</h3>
+                <button
+                  onClick={closeForm}
+                  className={`text-gray-500 hover:text-gray-700 ${darkMode ? 'hover:text-gray-300' : ''}`}
+                >
+                  ✕
+                </button>
+              </div>
+              <CVUploadForm 
+                onComplete={handleCVUploadComplete}
+                onCancel={closeForm}
+              />
+            </div>
+          </div>
+        </div>
+      ),
+      ai: (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className={`rounded-xl shadow-xl w-full max-h-[90vh] overflow-y-auto ${
+            isMobile ? 'max-w-full mx-2' : 'max-w-2xl'
+          } ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}>
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold">AI Agent Configuration</h3>
+                <button
+                  onClick={closeForm}
+                  className={`text-gray-500 hover:text-gray-700 ${darkMode ? 'hover:text-gray-300' : ''}`}
+                >
+                  ✕
+                </button>
+              </div>
+              <AIAgentForm 
+                onComplete={handleAIAgentComplete}
+                onCancel={closeForm}
+              />
+            </div>
+          </div>
+        </div>
+      ),
+      search: (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className={`rounded-xl shadow-xl w-full max-h-[90vh] overflow-y-auto ${
+            isMobile ? 'max-w-full mx-2' : 'max-w-5xl'
+          } ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'}`}>
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold">Job Search Setup</h3>
+                <button
+                  onClick={closeForm}
+                  className={`text-gray-500 hover:text-gray-700 ${darkMode ? 'hover:text-gray-300' : ''}`}
+                >
+                  ✕
+                </button>
+              </div>
+              <JobSearchForm 
+                onComplete={handleJobSearchComplete}
+                onCancel={closeForm}
+              />
+            </div>
+          </div>
+        </div>
+      )
+    };
 
-  // Calculate connection path between nodes
-  const getConnectionPath = (sourceId: string, targetId: string) => {
-    const sourceNode = workflow.nodes.find(node => node.id === sourceId);
-    const targetNode = workflow.nodes.find(node => node.id === targetId);
-    
-    if (!sourceNode || !targetNode) return '';
-
-    const startX = sourceNode.position.x + 150; // Node width is 150
-    const startY = sourceNode.position.y + 25; // Middle of node height (50)
-    const endX = targetNode.position.x;
-    const endY = targetNode.position.y + 25;
-
-    // Create a smooth bezier curve
-    const cpx = (startX + endX) / 2;
-    return `M${startX},${startY} C${cpx},${startY} ${cpx},${endY} ${endX},${endY}`;
+    return formComponents[activeForm];
   };
 
   return (
-    <div className={`h-screen flex flex-col ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900'}`}>
-      {/* Header */}
-      <header className={`p-4 flex justify-between items-center border-b ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
-        <h1 className="text-xl font-bold">Visual Workflow Builder</h1>
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-            className={`p-2 rounded-lg ${theme === 'dark' ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'}`}
-          >
-            {theme === 'light' ? '🌙' : '☀️'}
-          </button>
-          <button
-            onClick={executeWorkflow}
-            disabled={isExecuting || workflow.nodes.length === 0}
-            className={`px-4 py-2 rounded-lg font-medium ${isExecuting ? 'bg-yellow-600' : 'bg-green-600 hover:bg-green-700'} text-white disabled:opacity-50 disabled:cursor-not-allowed`}
-          >
-            {isExecuting ? 'Executing...' : 'Run Workflow'}
-          </button>
-        </div>
-      </header>
-
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <div className={`w-64 p-4 border-r ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
-          <h2 className="font-semibold mb-4">Node Library</h2>
-          
-          <div className="space-y-2">
-            <DraggableNode type="email" theme={theme} onClick={() => addNode('email', { x: 100, y: 100 })} />
-            <DraggableNode type="profile" theme={theme} onClick={() => addNode('profile', { x: 100, y: 200 })} />
-            <DraggableNode type="jobSearch" theme={theme} onClick={() => addNode('jobSearch', { x: 100, y: 300 })} />
-            <DraggableNode type="customAction" theme={theme} onClick={() => addNode('customAction', { x: 100, y: 400 })} />
-          </div>
-
-          <div className="mt-8">
-            <h2 className="font-semibold mb-4">Templates</h2>
+    <div className={`h-screen flex ${darkMode ? 'dark bg-gray-900' : 'bg-gray-50'} ${isMobile ? 'flex-col' : ''}`}>
+      {/* Mobile Header */}
+      {isMobile && (
+        <div className={`${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-b px-4 py-3 flex items-center justify-between`}>
+          <h1 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+            AI Job Search
+          </h1>
+          <div className="flex items-center space-x-2">
             <button
-              className={`w-full p-3 mb-2 text-left rounded-lg ${theme === 'dark' ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'}`}
-              onClick={() => {
-                // Load a simple template
-                setWorkflow({
-                  id: uuidv4(),
-                  name: 'Job Application Template',
-                  nodes: [
-                    {
-                      id: uuidv4(),
-                      type: 'profile',
-                      position: { x: 100, y: 100 },
-                      data: {},
-                      status: 'idle'
-                    },
-                    {
-                      id: uuidv4(),
-                      type: 'jobSearch',
-                      position: { x: 400, y: 100 },
-                      data: {},
-                      status: 'idle'
-                    },
-                    {
-                      id: uuidv4(),
-                      type: 'email',
-                      position: { x: 700, y: 100 },
-                      data: {},
-                      status: 'idle'
-                    }
-                  ],
-                  connections: [],
-                  status: 'idle'
-                });
-              }}
+              onClick={() => setDarkMode(!darkMode)}
+              className={`p-2 rounded-lg transition-colors ${
+                darkMode 
+                  ? 'bg-gray-700 text-yellow-400 hover:bg-gray-600' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
             >
-              Job Application Flow
+              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className={`p-2 rounded-lg transition-colors ${
+                darkMode 
+                  ? 'bg-gray-700 text-white hover:bg-gray-600' 
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <Settings size={18} />
             </button>
           </div>
         </div>
+      )}
 
-        {/* Main Canvas */}
+      {/* Mobile Sidebar Overlay */}
+      {isMobile && sidebarOpen && (
         <div 
-          ref={canvasRef}
-          className={`flex-1 relative overflow-hidden ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-100'}`}
-          onMouseDown={handleCanvasMouseDown}
-          onMouseMove={handleCanvasMouseMove}
-          onMouseUp={handleCanvasMouseUp}
-          onMouseLeave={handleCanvasMouseUp}
-        >
-          <div
-            className="absolute origin-top-left"
-            style={{
-              transform: `translate(${canvasPosition.x}px, ${canvasPosition.y}px) scale(${zoom})`,
-              width: '100%',
-              height: '100%'
-            }}
-          >
+          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
-            {/* Render nodes */}
-            {workflow.nodes.map(node => (
-              <SimpleNode
-                key={node.id}
-                node={node}
-                isSelected={selectedNode === node.id}
-                onSelect={() => setSelectedNode(node.id)}
-                onDelete={() => removeNode(node.id)}
-                theme={theme}
-              />
-            ))}
-
-            {/* Simple connection lines */}
-            <div className="absolute inset-0 pointer-events-none">
-              {workflow.connections.map(connection => {
-                const path = getConnectionPath(connection.source, connection.target);
-                return path ? (
-                  <svg key={connection.id} className="absolute top-0 left-0 w-full h-full">
-                    <path
-                      d={path}
-                      fill="none"
-                      stroke={connection.status === 'active' ? '#3b82f6' : '#9ca3af'}
-                      strokeWidth="2"
-                      strokeDasharray={connection.status === 'active' ? '5,5' : 'none'}
-                    />
-                  </svg>
-                ) : null;
-              })}
+      {/* Side Panel */}
+      <div className={`
+        ${isMobile 
+          ? `fixed top-0 left-0 h-full w-80 transform transition-transform duration-300 ease-in-out z-50 ${
+              sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+            }`
+          : 'w-80 relative'
+        } 
+        border-r ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} flex flex-col
+      `}>
+        {/* Header */}
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+              Workflow
+            </h1>
+            <div className="flex items-center space-x-2">
+              {!isMobile && (
+                <button
+                  onClick={() => setDarkMode(!darkMode)}
+                  className={`p-2 rounded-lg transition-colors ${
+                    darkMode 
+                      ? 'bg-gray-700 text-yellow-400 hover:bg-gray-600' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+                </button>
+              )}
+              {isMobile && (
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  className={`p-2 rounded-lg transition-colors ${
+                    darkMode 
+                      ? 'bg-gray-700 text-white hover:bg-gray-600' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  ✕
+                </button>
+              )}
             </div>
           </div>
+          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+            Set up your AI job search workflow
+          </p>
+        </div>
 
-          {/* Canvas controls */}
-          <div className={`absolute bottom-4 right-4 flex space-x-2 ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} p-2 rounded-lg shadow-lg`}>
-            <button 
-              onClick={() => setZoom(prev => Math.min(prev + 0.1, 2))}
-              className="p-2 rounded hover:bg-gray-200"
-              disabled={zoom >= 2}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-            </button>
-            <button 
-              onClick={() => setZoom(prev => Math.max(prev - 0.1, 0.5))}
-              className="p-2 rounded hover:bg-gray-200"
-              disabled={zoom <= 0.5}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-              </svg>
-            </button>
-            <button 
-              onClick={() => {
-                setZoom(1);
-                setCanvasPosition({ x: 0, y: 0 });
-              }}
-              className="p-2 rounded hover:bg-gray-200"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-              </svg>
-            </button>
+        {/* Progress */}
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+              Progress
+            </h2>
+            <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              {completedNodes}/{nodes.length} complete
+            </span>
+          </div>
+          <div className={`w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-4`}>
+            <div 
+              className="bg-emerald-500 h-2 rounded-full transition-all duration-500" 
+              style={{ width: `${(completedNodes / nodes.length) * 100}%` }} 
+            />
+          </div>
+          
+          {/* Workflow Status */}
+          {completedNodes === nodes.length ? (
+            <div className={`p-3 rounded-lg ${darkMode ? 'bg-emerald-900' : 'bg-emerald-50'} border border-emerald-200`}>
+              <div className="flex items-center">
+                <div className="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center mr-3">
+                  <span className="text-white text-xs">✓</span>
+                </div>
+                <div>
+                  <p className={`text-sm font-medium ${darkMode ? 'text-emerald-200' : 'text-emerald-800'}`}>
+                    Workflow Complete!
+                  </p>
+                  <p className={`text-xs ${darkMode ? 'text-emerald-300' : 'text-emerald-600'}`}>
+                    AI agent is ready to find and apply for jobs
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className={`p-3 rounded-lg ${darkMode ? 'bg-blue-900' : 'bg-blue-50'} border border-blue-200`}>
+              <div className="flex items-center">
+                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center mr-3 animate-pulse">
+                  <span className="text-white text-xs">{completedNodes + 1}</span>
+                </div>
+                <div>
+                  <p className={`text-sm font-medium ${darkMode ? 'text-blue-200' : 'text-blue-800'}`}>
+                    Setup in Progress
+                  </p>
+                  <p className={`text-xs ${darkMode ? 'text-blue-300' : 'text-blue-600'}`}>
+                    Complete {nodes.length - completedNodes} more step{nodes.length - completedNodes > 1 ? 's' : ''}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="space-y-3">
+            {nodes.map(node => (
+              <div
+                key={node.id}
+                className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all ${
+                  selectedNode === node.id
+                    ? darkMode 
+                      ? 'bg-gray-700 border border-gray-600' 
+                      : 'bg-blue-50 border border-blue-200'
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+                onClick={() => setSelectedNode(node.id)}
+              >
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  node.status === 'completed' ? 'bg-emerald-500' :
+                  node.status === 'current' ? 'bg-blue-500' :
+                  'bg-gray-300 dark:bg-gray-600'
+                }`}>
+                  {node.status === 'completed' ? (
+                    <div className="w-4 h-4 text-white">✓</div>
+                  ) : (
+                    <node.icon size={16} className="text-white" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <h3 className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    {node.title}
+                  </h3>
+                  <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'} capitalize`}>
+                    {node.status}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Properties Panel */}
-        <div className={`w-80 p-4 border-l ${theme === 'dark' ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
-          {selectedNode ? (
-            <NodeProperties 
-              node={workflow.nodes.find(n => n.id === selectedNode)!}
-              onUpdate={(data: any) => updateNodeData(selectedNode, data)}
-              theme={theme}
-            />
-          ) : workflow.connections.length > 0 ? (
-            <div>
-              <h2 className="text-lg font-semibold mb-4">Connections</h2>
-              <div className="space-y-3">
-                {workflow.connections.map(conn => (
-                  <div 
-                    key={conn.id} 
-                    className={`p-3 rounded-lg flex items-center justify-between ${
-                      theme === 'dark' ? 'bg-gray-700' : 'bg-gray-100'
-                    }`}
-                  >
-                    <div>
-                      <span className="text-sm font-medium">Connection</span>
-                      <div className="text-xs text-gray-500">ID: {conn.id}</div>
-                    </div>
-                    <button
-                      onClick={() => removeConnection(conn.id)}
-                      className={`p-1 rounded-full ${
-                        theme === 'dark' ? 'hover:bg-gray-600' : 'hover:bg-gray-200'
+        {/* Node Details or Quick Actions */}
+        {completedNodes === nodes.length ? (
+          <div className="p-6 flex-1">
+            <h2 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+              Quick Actions
+            </h2>
+            <div className="space-y-3">
+              <button 
+                onClick={() => setActiveForm('search')}
+                className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white py-3 px-4 rounded-lg transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
+              >
+                🚀 Start Job Search
+              </button>
+              <button 
+                onClick={() => setActiveForm('profile')}
+                className="w-full bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg transition-colors"
+              >
+                📝 Edit Profile
+              </button>
+              <button 
+                onClick={() => setActiveForm('ai')}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg transition-colors"
+              >
+                🤖 AI Settings
+              </button>
+              <div className={`mt-4 p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                <h3 className={`text-sm font-medium mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                  Applications Today
+                </h3>
+                <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {(() => {
+                    try {
+                      const applications = JSON.parse(localStorage.getItem('jobApplications') || '[]');
+                      const today = new Date().toISOString().split('T')[0];
+                      const todayApplications = applications.filter((app: any) => 
+                        app.applicationDate?.startsWith(today)
+                      );
+                      return todayApplications.length;
+                    } catch {
+                      return 0;
+                    }
+                  })()} applications submitted
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : selectedNodeData && (
+          <div className="p-6 flex-1">
+            <h2 className={`text-lg font-semibold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+              {selectedNodeData.title}
+            </h2>
+            <div className="space-y-4">
+              <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                <h3 className={`text-sm font-medium mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                  Status
+                </h3>
+                <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                  selectedNodeData.status === 'completed' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' :
+                  selectedNodeData.status === 'current' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                  'bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
+                }`}>
+                  <div className={`w-2 h-2 rounded-full ${
+                    selectedNodeData.status === 'completed' ? 'bg-emerald-500' :
+                    selectedNodeData.status === 'current' ? 'bg-blue-500' :
+                    'bg-gray-400'
+                  }`} />
+                  {selectedNodeData.status}
+                </div>
+              </div>
+              
+              {selectedNodeData.status === 'current' && (
+                <button 
+                  onClick={() => setActiveForm(selectedNodeData.formType)}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors"
+                >
+                  Configure {selectedNodeData.title}
+                </button>
+              )}
+              
+              {selectedNodeData.status === 'completed' && (
+                <button 
+                  onClick={() => setActiveForm(selectedNodeData.formType)}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-4 rounded-lg transition-colors"
+                >
+                  View {selectedNodeData.title}
+                </button>
+              )}
+              
+              {selectedNodeData.status === 'pending' && (
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Complete previous steps to unlock
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Main Canvas */}
+      <div className="flex-1 flex flex-col">
+        {/* Canvas Controls */}
+        <div className={`p-4 border-b ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <div className="flex items-center justify-between">
+            <h2 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+              {isMobile ? 'Workflow' : 'Workflow Canvas'}
+            </h2>
+            {!isMobile && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setZoom(prev => Math.min(prev + 0.1, 2))}
+                  className={`p-2 rounded-lg transition-colors ${
+                    darkMode 
+                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                  disabled={zoom >= 2}
+                >
+                  <ZoomIn size={16} />
+                </button>
+                <button
+                  onClick={() => setZoom(prev => Math.max(prev - 0.1, 0.5))}
+                  className={`p-2 rounded-lg transition-colors ${
+                    darkMode 
+                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                  disabled={zoom <= 0.5}
+                >
+                  <ZoomOut size={16} />
+                </button>
+                <button
+                  onClick={resetView}
+                  className={`p-2 rounded-lg transition-colors ${
+                    darkMode 
+                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <RotateCcw size={16} />
+                </button>
+                <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {Math.round(zoom * 100)}%
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Canvas */}
+        <div className="flex-1 overflow-hidden relative">
+          {isMobile ? (
+            /* Mobile View - Vertical Node List */
+            <div className={`h-full overflow-y-auto p-4 ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}`}>
+              <div className="space-y-4">
+                {nodes.map((node, index) => (
+                  <div key={node.id} className="relative">
+                    {/* Connection Line */}
+                    {index < nodes.length - 1 && (
+                      <div className={`absolute left-8 top-16 w-0.5 h-8 ${
+                        node.status === 'completed' ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600'
+                      }`} />
+                    )}
+                    
+                    {/* Node Card */}
+                    <div
+                      className={`relative bg-white dark:bg-gray-800 rounded-xl p-4 border-2 transition-all duration-200 ${
+                        selectedNode === node.id
+                          ? 'border-blue-500 shadow-lg'
+                          : node.status === 'completed'
+                          ? 'border-emerald-300 shadow-md'
+                          : node.status === 'current'
+                          ? 'border-blue-300 shadow-md'
+                          : 'border-gray-200 dark:border-gray-700'
                       }`}
+                      onClick={() => handleNodeClick(node.id)}
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
+                      <div className="flex items-center space-x-4">
+                        {/* Node Icon */}
+                        <div className={`w-16 h-16 rounded-xl flex items-center justify-center ${
+                          node.status === 'completed' ? 'bg-emerald-500' :
+                          node.status === 'current' ? 'bg-blue-500' :
+                          'bg-gray-400 dark:bg-gray-500'
+                        }`}>
+                          {node.status === 'completed' ? (
+                            <div className="text-white text-2xl">✓</div>
+                          ) : (
+                            <node.icon size={32} className="text-white" />
+                          )}
+                        </div>
+                        
+                        {/* Node Content */}
+                        <div className="flex-1">
+                          <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                            {node.title}
+                          </h3>
+                          <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'} mb-2`}>
+                            {node.description}
+                          </p>
+                          <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
+                            node.status === 'completed' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' :
+                            node.status === 'current' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                            'bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
+                          }`}>
+                            <div className={`w-2 h-2 rounded-full ${
+                              node.status === 'completed' ? 'bg-emerald-500' :
+                              node.status === 'current' ? 'bg-blue-500' :
+                              'bg-gray-400'
+                            }`} />
+                            {node.status === 'completed' ? 'Completed' :
+                             node.status === 'current' ? 'In Progress' :
+                             'Pending'}
+                          </div>
+                        </div>
+                        
+                        {/* Action Button */}
+                        {(node.status === 'current' || node.status === 'completed') && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveForm(node.formType);
+                            }}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                              node.status === 'completed'
+                                ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                : 'bg-blue-600 hover:bg-blue-700 text-white'
+                            }`}
+                          >
+                            {node.status === 'completed' ? 'View' : 'Configure'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <svg className="w-12 h-12 mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <h3 className="text-lg font-medium mb-1">No Selection</h3>
-              <p className="text-sm text-gray-500">Select a node or connection to edit its properties</p>
+            /* Desktop View - Canvas */
+            <div
+              ref={canvasRef}
+              className={`w-full h-full cursor-grab active:cursor-grabbing ${
+                darkMode ? 'bg-gray-900' : 'bg-gray-50'
+              }`}
+              onMouseDown={handleCanvasMouseDown}
+              onMouseMove={handleCanvasMouseMove}
+              onMouseUp={handleCanvasMouseUp}
+              onMouseLeave={handleCanvasMouseUp}
+              onWheel={handleCanvasWheel}
+            >
+              <div
+                className="absolute origin-center"
+                style={{
+                  transform: `translate(${canvasPos.x}px, ${canvasPos.y}px) scale(${zoom})`,
+                  width: '2000px',
+                  height: '1000px'
+                }}
+              >
+                {/* Connections */}
+                <svg className="absolute inset-0 pointer-events-none" width="2000" height="1000">
+                  <defs>
+                    <marker
+                      id="arrowhead"
+                      markerWidth="10"
+                      markerHeight="7"
+                      refX="9"
+                      refY="3.5"
+                      orient="auto"
+                    >
+                      <polygon
+                        points="0 0, 10 3.5, 0 7"
+                        fill={darkMode ? '#6b7280' : '#9ca3af'}
+                      />
+                    </marker>
+                  </defs>
+                  {connections.map((conn, index) => (
+                    <path
+                      key={index}
+                      d={getConnectionPath(conn.from, conn.to)}
+                      fill="none"
+                      stroke={darkMode ? '#4b5563' : '#d1d5db'}
+                      strokeWidth="2"
+                      strokeDasharray="5,5"
+                      markerEnd="url(#arrowhead)"
+                      className="animate-pulse"
+                    />
+                  ))}
+                </svg>
+
+                {/* Nodes */}
+                {nodes.map(node => {
+                  const position = nodePositions[node.id] || { x: 0, y: 0 };
+                  return (
+                    <div
+                      key={node.id}
+                      className={`absolute w-32 h-32 rounded-2xl cursor-move transition-all duration-200 transform hover:scale-105 ${
+                        selectedNode === node.id
+                          ? darkMode
+                            ? 'ring-2 ring-blue-400 shadow-2xl shadow-blue-500/20'
+                            : 'ring-2 ring-blue-500 shadow-2xl shadow-blue-500/20'
+                          : 'hover:shadow-xl'
+                      } ${
+                        node.status === 'completed'
+                          ? darkMode
+                            ? 'bg-gradient-to-br from-emerald-800 to-emerald-900 border-2 border-emerald-600'
+                            : 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-2 border-emerald-300'
+                          : node.status === 'current'
+                          ? darkMode
+                            ? 'bg-gradient-to-br from-blue-800 to-blue-900 border-2 border-blue-600'
+                            : 'bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300'
+                          : darkMode
+                          ? 'bg-gradient-to-br from-gray-700 to-gray-800 border-2 border-gray-600'
+                          : 'bg-gradient-to-br from-white to-gray-50 border-2 border-gray-300'
+                      }`}
+                      style={{
+                        left: position.x,
+                        top: position.y
+                      }}
+                      onMouseDown={(e) => handleNodeMouseDown(e, node.id)}
+                      onClick={() => handleNodeClick(node.id)}
+                    >
+                      <div className="h-full flex flex-col items-center justify-center p-4">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-2 ${
+                          node.status === 'completed' ? 'bg-emerald-500' :
+                          node.status === 'current' ? 'bg-blue-500' :
+                          'bg-gray-400 dark:bg-gray-500'
+                        }`}>
+                          {node.status === 'completed' ? (
+                            <div className="text-white text-xl">✓</div>
+                          ) : (
+                            <node.icon size={24} className="text-white" />
+                          )}
+                        </div>
+                        <div className={`text-center text-xs font-medium leading-tight ${
+                          darkMode ? 'text-white' : 'text-gray-900'
+                        }`}>
+                          {node.title}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Execution Status */}
-      {isExecuting && (
-        <div className={`fixed bottom-4 left-4 p-4 rounded-lg shadow-lg ${
-          theme === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'
-        }`}>
-          <div className="flex items-center space-x-2">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-            <span>Executing workflow...</span>
-          </div>
-        </div>
-      )}
+      {/* Forms Modal */}
+      {renderForm()}
     </div>
   );
 };
 
-// Simple Node Component for Sidebar
-const DraggableNode: React.FC<{ 
-  type: NodeTypes; 
-  theme: 'light' | 'dark';
-  onClick: () => void;
-}> = ({ type, theme, onClick }) => {
-
-  const getNodeInfo = () => {
-    switch (type) {
-      case 'email':
-        return {
-          title: 'Email Integration',
-          icon: (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-          ),
-          color: 'bg-blue-500'
-        };
-      case 'profile':
-        return {
-          title: 'Profile Setup',
-          icon: (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          ),
-          color: 'bg-purple-500'
-        };
-      case 'jobSearch':
-        return {
-          title: 'Job Search',
-          icon: (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          ),
-          color: 'bg-green-500'
-        };
-      case 'customAction':
-        return {
-          title: 'Custom Action',
-          icon: (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          ),
-          color: 'bg-yellow-500'
-        };
-    }
-  };
-
-  const nodeInfo = getNodeInfo();
-
-  return (
-    <div
-      onClick={onClick}
-      className={`p-3 rounded-lg cursor-pointer flex items-center space-x-3 transition-all hover:scale-105 ${
-        theme === 'dark' ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'
-      }`}
-    >
-      <div className={`${nodeInfo.color} text-white p-2 rounded-lg`}>
-        {nodeInfo.icon}
-      </div>
-      <div>
-        <h3 className="font-medium">{nodeInfo.title}</h3>
-        <p className="text-xs text-gray-500">Click to add</p>
-      </div>
-    </div>
-  );
-};
-
-// Node Properties Panel
-const NodeProperties: React.FC<{ node: NodeData; onUpdate: (data: any) => void; theme: 'light' | 'dark' }> = ({ 
-  node, 
-  onUpdate,
-  theme
-}) => {
-  const [data, setData] = useState(node.data);
-
-  useEffect(() => {
-    setData(node.data);
-  }, [node.id]);
-
-  const handleChange = (key: string, value: any) => {
-    const newData = { ...data, [key]: value };
-    setData(newData);
-    onUpdate(newData);
-  };
-
-  const renderFields = () => {
-    switch (node.type) {
-      case 'email':
-        return (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Email Service</label>
-              <select
-                value={data.service || ''}
-                onChange={(e) => handleChange('service', e.target.value)}
-                className={`w-full p-2 rounded border ${
-                  theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
-                }`}
-              >
-                <option value="">Select service</option>
-                <option value="gmail">Gmail</option>
-                <option value="outlook">Outlook</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Template</label>
-              <textarea
-                value={data.template || ''}
-                onChange={(e) => handleChange('template', e.target.value)}
-                rows={5}
-                className={`w-full p-2 rounded border ${
-                  theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
-                }`}
-                placeholder="Enter your email template..."
-              />
-            </div>
-          </div>
-        );
-      case 'profile':
-        return (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">CV/Resume</label>
-              <textarea
-                value={data.cv || ''}
-                onChange={(e) => handleChange('cv', e.target.value)}
-                rows={5}
-                className={`w-full p-2 rounded border ${
-                  theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
-                }`}
-                placeholder="Enter your CV content..."
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Skills</label>
-              <input
-                type="text"
-                value={data.skills || ''}
-                onChange={(e) => handleChange('skills', e.target.value)}
-                className={`w-full p-2 rounded border ${
-                  theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
-                }`}
-                placeholder="Comma separated skills"
-              />
-            </div>
-          </div>
-        );
-      case 'jobSearch':
-        return (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Keywords</label>
-              <input
-                type="text"
-                value={data.keywords || ''}
-                onChange={(e) => handleChange('keywords', e.target.value)}
-                className={`w-full p-2 rounded border ${
-                  theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
-                }`}
-                placeholder="e.g. React, Node.js"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Location</label>
-              <input
-                type="text"
-                value={data.location || ''}
-                onChange={(e) => handleChange('location', e.target.value)}
-                className={`w-full p-2 rounded border ${
-                  theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
-                }`}
-                placeholder="e.g. Remote, New York"
-              />
-            </div>
-          </div>
-        );
-      case 'customAction':
-        return (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Action Type</label>
-              <select
-                value={data.actionType || ''}
-                onChange={(e) => handleChange('actionType', e.target.value)}
-                className={`w-full p-2 rounded border ${
-                  theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
-                }`}
-              >
-                <option value="">Select action type</option>
-                <option value="api">API Call</option>
-                <option value="delay">Delay</option>
-                <option value="condition">Condition</option>
-              </select>
-            </div>
-            {data.actionType === 'api' && (
-              <div>
-                <label className="block text-sm font-medium mb-1">API Endpoint</label>
-                <input
-                  type="text"
-                  value={data.endpoint || ''}
-                  onChange={(e) => handleChange('endpoint', e.target.value)}
-                  className={`w-full p-2 rounded border ${
-                    theme === 'dark' ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'
-                  }`}
-                  placeholder="https://api.example.com/endpoint"
-                />
-              </div>
-            )}
-          </div>
-        );
-    }
-  };
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">
-          {node.type === 'email' && 'Email Integration'}
-          {node.type === 'profile' && 'Profile Setup'}
-          {node.type === 'jobSearch' && 'Job Search'}
-          {node.type === 'customAction' && 'Custom Action'}
-        </h2>
-        <div className={`w-3 h-3 rounded-full ${
-          node.status === 'idle' ? 'bg-gray-400' :
-          node.status === 'running' ? 'bg-yellow-500 animate-pulse' :
-          node.status === 'completed' ? 'bg-green-500' : 'bg-red-500'
-        }`} />
-      </div>
-      
-      {renderFields()}
-    </div>
-  );
-};
-
-
-export default WorkflowSteps;
+export default WorkflowUI;

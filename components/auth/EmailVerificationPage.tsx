@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { LoadingSpinner } from '../shared';
+import { API_CONFIG } from '../../src/config/api';
 
 interface VerificationResult {
   success: boolean;
@@ -34,7 +35,7 @@ const EmailVerificationPage: React.FC = () => {
 
   const verifyEmail = async (verificationToken: string, userEmail: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/auth/verify-email/?token=${verificationToken}&email=${userEmail}`);
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/auth/verify-email/?token=${verificationToken}&email=${userEmail}`);
       const result: VerificationResult = await response.json();
 
       if (result.success) {
@@ -63,7 +64,7 @@ const EmailVerificationPage: React.FC = () => {
   const resendVerificationEmail = async () => {
     setIsResending(true);
     try {
-      const response = await fetch('http://localhost:8000/api/auth/resend-verification/', {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/auth/resend-verification/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

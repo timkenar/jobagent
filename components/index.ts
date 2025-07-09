@@ -27,3 +27,6 @@ export * from './shared';
 
 // Layout Components
 export * from './layout';
+
+// Automation Components
+export * from './automation';

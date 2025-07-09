@@ -63,7 +63,7 @@ const EmailIntegrationSection: React.FC = () => {
         setLoading(false);
         return;
       }
-      const res = await axios.get(`http://localhost:8000/api/email-accounts/oauth-init/?provider=${provider}`, {
+      const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/api/email-accounts/oauth-init/?provider=${provider}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.error) {

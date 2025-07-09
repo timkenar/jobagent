@@ -14,6 +14,8 @@ interface AuthResponse {
   token?: string;
   message?: string;
   user?: { id: string; email: string; fullName: string };
+  email_verification_required?: boolean;
+  email?: string;
 }
 
 type AuthMode = 'signup' | 'signin';

@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useJobSearch } from './src/hooks/useJobSearch';
+import { useSessionManager } from './src/hooks/useSessionManager';
 import { GmailProvider } from './src/contexts/GmailContext';
 import { ThemeProvider } from './src/contexts/ThemeContext';
 import {
@@ -11,14 +12,19 @@ import {
 } from './components/auth';
 import { Dashboard } from './components/dashboard';
 import { LoadingSpinner, EnhancedChatbot } from './components/shared';
-import GmailAccountSection from './components/email/Email';
+import Emails from './components/email/Email';
 
 const App = () => {
   const {
     isBackendAvailable,
     isSignedIn,
+    authToken,
     handleSignInSuccess,
+    handleSignOut,
   } = useJobSearch();
+
+  // Initialize session manager
+  useSessionManager({ isSignedIn, authToken, handleSignOut });
 
   if (isBackendAvailable === null) {
     return (
@@ -80,13 +86,25 @@ const App = () => {
         } />
         
         {/* Main app routes */}
-        <Route path="/*" element={
+        <Route path="/" element={
           !isSignedIn ? (
             <SignUpPage onSignInSuccess={handleSignInSuccess} />
           ) : (
             <>
               <Dashboard />
               <EnhancedChatbot /> {/* Floating chatbot component */}
+            </>
+          )
+        } />
+        
+        {/* Catch-all route */}
+        <Route path="*" element={
+          !isSignedIn ? (
+            <SignUpPage onSignInSuccess={handleSignInSuccess} />
+          ) : (
+            <>
+              <Dashboard />
+              <EnhancedChatbot />
             </>
           )
         } />
@@ -97,7 +115,7 @@ const App = () => {
           ) : (
             <>
             <Dashboard />
-            <GmailAccountSection gmail={{}} />
+            <Emails />
             </>
           )
         } /> */}
