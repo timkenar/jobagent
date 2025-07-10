@@ -25,7 +25,9 @@ const NotificationBell: React.FC = () => {
       const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       // Use the current host, assuming frontend and backend are served from the same domain.
       // The backend Channels server needs to be running.
-      const wsUrl = `${wsProtocol}//${window.location.host}/ws/notifications/?token=${token}`;
+      // const wsUrl = `${wsProtocol}//${window.location.host}/ws/notifications/?token=${token}`;
+      const wsUrl = `${wsProtocol}//localhost:8000/ws/notifications/?token=${token}`;
+
       
       socket.current = new WebSocket(wsUrl);
 
