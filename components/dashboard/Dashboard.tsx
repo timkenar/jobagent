@@ -178,10 +178,6 @@ const Settings: React.FC = () => {
 
 const Dashboard: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string>('dashboard');
-  const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('darkMode');
-    return saved ? JSON.parse(saved) : false;
-  });
   
   const {
     isSignedIn,
@@ -189,13 +185,6 @@ const Dashboard: React.FC = () => {
     handleSignOut,
     isLoadingSearch,
   } = useJobSearch();
-
-  // Toggle dark mode
-  const toggleDarkMode = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-    localStorage.setItem('darkMode', JSON.stringify(newDarkMode));
-  };
 
   if (!isSignedIn) {
     return null; // This will be handled by App.tsx
@@ -255,8 +244,6 @@ const Dashboard: React.FC = () => {
       setActiveSection={setActiveSection}
       onSignOut={handleSignOut}
       isSigningOut={isLoadingSearch}
-      darkMode={darkMode}
-      onThemeToggle={toggleDarkMode}
     >
       <div className="min-h-screen">
         {/* Desktop Header - Only show on desktop */}

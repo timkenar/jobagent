@@ -7,6 +7,7 @@ import gsap from 'gsap';
 
 interface SignUpPageProps {
   onSignInSuccess: (token: string) => void;
+  isSignIn?: boolean;
 }
 
 interface AuthResponse {
@@ -20,8 +21,8 @@ interface AuthResponse {
 
 type AuthMode = 'signup' | 'signin';
 
-const SignUpPage: React.FC<SignUpPageProps> = ({ onSignInSuccess }) => {
-  const [authMode, setAuthMode] = useState<AuthMode>('signup');
+const SignUpPage: React.FC<SignUpPageProps> = ({ onSignInSuccess, isSignIn = false }) => {
+  const [authMode, setAuthMode] = useState<AuthMode>(isSignIn ? 'signin' : 'signup');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

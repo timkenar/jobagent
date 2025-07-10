@@ -136,23 +136,23 @@ const SettingsManagement: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading settings...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading settings...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-200">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-white shadow rounded-lg mb-8">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-900">Settings Management</h1>
-            <p className="mt-1 text-gray-600">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg mb-8 transition-colors duration-200">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Settings Management</h1>
+            <p className="mt-1 text-gray-600 dark:text-gray-300">
               Manage API keys and application configuration
             </p>
           </div>
@@ -160,7 +160,7 @@ const SettingsManagement: React.FC = () => {
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+          <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-6">
             {error}
           </div>
         )}
@@ -168,20 +168,20 @@ const SettingsManagement: React.FC = () => {
         {/* Settings by Category */}
         <div className="space-y-6">
           {settingsByCategory.map((category) => (
-            <div key={category.category} className="bg-white shadow rounded-lg overflow-hidden">
+            <div key={category.category} className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden transition-colors duration-200">
               {/* Category Header */}
-              <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-medium text-gray-900 flex items-center">
+              <div className="bg-gray-50 dark:bg-gray-700 px-6 py-4 border-b border-gray-200 dark:border-gray-600">
+                <h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
                   <span className="mr-2 text-xl">{getCategoryIcon(category.category)}</span>
                   {category.display_name}
-                  <span className="ml-2 bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded-full">
+                  <span className="ml-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 text-xs px-2 py-1 rounded-full">
                     {category.settings.length} settings
                   </span>
                 </h2>
               </div>
 
               {/* Settings List */}
-              <div className="divide-y divide-gray-200">
+              <div className="divide-y divide-gray-200 dark:divide-gray-700">
                 {category.settings.map((setting) => (
                   <div key={setting.id} className="px-6 py-4">
                     <div className="flex items-start justify-between">
@@ -227,7 +227,7 @@ const SettingsManagement: React.FC = () => {
                                     ...prev,
                                     [setting.id]: e.target.value
                                   }))}
-                                  className="block w-32 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                  className="block w-32 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                                 >
                                   <option value="true">True</option>
                                   <option value="false">False</option>
@@ -240,7 +240,7 @@ const SettingsManagement: React.FC = () => {
                                     [setting.id]: e.target.value
                                   }))}
                                   rows={3}
-                                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                  className="block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                                 />
                               ) : (
                                 <input
@@ -250,7 +250,7 @@ const SettingsManagement: React.FC = () => {
                                     ...prev,
                                     [setting.id]: e.target.value
                                   }))}
-                                  className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                  className="block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                                 />
                               )}
                               
@@ -264,7 +264,7 @@ const SettingsManagement: React.FC = () => {
                               
                               <button
                                 onClick={() => handleCancelEdit(setting.id)}
-                                className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                className="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
                               >
                                 Cancel
                               </button>
@@ -272,15 +272,15 @@ const SettingsManagement: React.FC = () => {
                           ) : (
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
-                                <span className="text-sm text-gray-500 font-medium">Current Value: </span>
-                                <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
+                                <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">Current Value: </span>
+                                <span className="text-sm font-mono bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-2 py-1 rounded">
                                   {setting.is_sensitive ? setting.display_value : setting.value || setting.default_value || 'Not set'}
                                 </span>
                               </div>
                               
                               <button
                                 onClick={() => handleEditClick(setting.id, setting.value || setting.default_value || '')}
-                                className="ml-3 inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                className="ml-3 inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800"
                               >
                                 Edit
                               </button>
@@ -297,7 +297,7 @@ const SettingsManagement: React.FC = () => {
         </div>
 
         {/* Footer */}
-        <div className="mt-8 text-center text-sm text-gray-500">
+        <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
           <p>Changes take effect immediately. Settings are cached for 5 minutes.</p>
         </div>
       </div>

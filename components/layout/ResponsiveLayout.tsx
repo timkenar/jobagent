@@ -9,8 +9,6 @@ interface ResponsiveLayoutProps {
   setActiveSection: (section: string) => void;
   onSignOut: () => void;
   isSigningOut?: boolean;
-  darkMode?: boolean;
-  onThemeToggle?: () => void;
 }
 
 const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
@@ -18,9 +16,7 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
   activeSection,
   setActiveSection,
   onSignOut,
-  isSigningOut = false,
-  darkMode = false,
-  onThemeToggle
+  isSigningOut = false
 }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -55,14 +51,12 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
   }, [isMobile, sidebarOpen]);
 
   return (
-    <div className={`min-h-screen ${darkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       {/* Mobile Header */}
       {isMobile && (
         <MobileHeader
           activeSection={activeSection}
           onMenuClick={() => setSidebarOpen(true)}
-          darkMode={darkMode}
-          onThemeToggle={onThemeToggle}
         />
       )}
 
@@ -88,7 +82,7 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
       `}>
         <main className={`
           ${isMobile ? 'p-0' : 'p-6'}
-          ${darkMode ? 'bg-gray-900' : 'bg-gray-50'}
+          bg-gray-50 dark:bg-gray-900 transition-colors duration-200
           min-h-screen
         `}>
           {children}
@@ -100,7 +94,6 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
         <BottomNavigation
           activeSection={activeSection}
           setActiveSection={setActiveSection}
-          darkMode={darkMode}
         />
       )}
     </div>

@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { useJobSearch } from './src/hooks/useJobSearch';
 import { useSessionManager } from './src/hooks/useSessionManager';
 import { GmailProvider } from './src/contexts/GmailContext';
@@ -13,6 +13,22 @@ import {
 import { Dashboard } from './components/dashboard';
 import { LoadingSpinner, EnhancedChatbot } from './components/shared';
 import Emails from './components/email/Email';
+import LandingPage from './components/LandingPage';
+
+// Wrapper component to handle landing page navigation
+const LandingPageWrapper = ({ onSignInSuccess }) => {
+  const navigate = useNavigate();
+  
+  const handleGetStarted = () => {
+    navigate('/signup');
+  };
+  
+  const handleSignIn = () => {
+    navigate('/signin');
+  };
+  
+  return <LandingPage onGetStarted={handleGetStarted} onSignIn={handleSignIn} />;
+};
 
 const App = () => {
   const {
@@ -73,8 +89,20 @@ const App = () => {
         {/* Email verification required route */}
         <Route path="/verify-email-required" element={<EmailVerificationRequired />} />
         
-        {/* Sign in route - redirect to main page if not signed in */}
-        <Route path="/signin" element={
+        {/* Landing page - shown when not signed in */}
+        <Route path="/" element={
+          !isSignedIn ? (
+            <LandingPageWrapper onSignInSuccess={handleSignInSuccess} />
+          ) : (
+            <>
+              <Dashboard />
+              <EnhancedChatbot /> {/* Floating chatbot component */}
+            </>
+          )
+        } />
+        
+        {/* Sign up route */}
+        <Route path="/signup" element={
           !isSignedIn ? (
             <SignUpPage onSignInSuccess={handleSignInSuccess} />
           ) : (
@@ -85,14 +113,14 @@ const App = () => {
           )
         } />
         
-        {/* Main app routes */}
-        <Route path="/" element={
+        {/* Sign in route */}
+        <Route path="/signin" element={
           !isSignedIn ? (
-            <SignUpPage onSignInSuccess={handleSignInSuccess} />
+            <SignUpPage onSignInSuccess={handleSignInSuccess} isSignIn={true} />
           ) : (
             <>
               <Dashboard />
-              <EnhancedChatbot /> {/* Floating chatbot component */}
+              <EnhancedChatbot />
             </>
           )
         } />
@@ -100,7 +128,7 @@ const App = () => {
         {/* Catch-all route */}
         <Route path="*" element={
           !isSignedIn ? (
-            <SignUpPage onSignInSuccess={handleSignInSuccess} />
+            <LandingPageWrapper onSignInSuccess={handleSignInSuccess} />
           ) : (
             <>
               <Dashboard />
