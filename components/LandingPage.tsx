@@ -1,6 +1,3 @@
-// Install dependencies:
-// npm install react react-dom @heroicons/react/24/outline gsap
-
 import React, { useState, useEffect, useRef } from 'react';
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import gsap from 'gsap';
@@ -166,7 +163,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onSignIn }) => 
             </h1>
             <p className="text-lg sm:text-xl lg:text-2xl text-gray-600 dark:text-gray-300 mb-8 sm:mb-12 leading-relaxed px-4 sm:px-0">
               Discover your next opportunity with AI-powered job search. Get personalized recommendations, 
-              automated applications, and intelligent career insights.
+              automated applications, and Email tracking with insights.
             </p>
             
             <div className="max-w-2xl mx-auto mb-8 sm:mb-12 px-4 sm:px-0">
@@ -372,7 +369,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onSignIn }) => 
           </div>
         </div>
       </section>
-
+            {/* To change the color gradient in this section */}
       <section ref={ctaRef} className="py-12 sm:py-20 bg-gradient-to-r from-blue-600 to-purple-600 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="max-w-3xl mx-auto">
