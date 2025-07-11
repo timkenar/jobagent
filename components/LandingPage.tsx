@@ -406,8 +406,34 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onSignIn }) => 
                 AI Job Agent
               </span>
             </div>
-            <p className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm">
+            <p className="text-gray-600 dark:text-gray-300 text-xs sm:text-sm mb-4">
               Your Smart Career Companion - Powered by NGAZI
+            </p>
+            
+            {/* Legal Links */}
+            <div className="flex items-center justify-center space-x-4 sm:space-x-6 mb-4">
+              <a 
+                href="/privacy" 
+                className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 text-xs sm:text-sm transition-colors underline"
+              >
+                Privacy Policy
+              </a>
+              <a 
+                href="/terms" 
+                className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 text-xs sm:text-sm transition-colors underline"
+              >
+                Terms of Service
+              </a>
+              <a 
+                href="mailto:support@aijobsearch.com" 
+                className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 text-xs sm:text-sm transition-colors underline"
+              >
+                Contact Support
+              </a>
+            </div>
+            
+            <p className="text-gray-500 dark:text-gray-400 text-xs">
+              © 2024 AI Job Agent. All rights reserved.
             </p>
           </div>
         </div>

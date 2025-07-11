@@ -21,6 +21,9 @@ import BillingPage from './components/subscriptions/pages/BillingPage';
 import SettingsPage from './components/subscriptions/pages/SettingsPage';
 import PaymentCallbackPage from './components/subscriptions/pages/PaymentCallbackPage';
 import PricingManagementPage from './components/subscriptions/pages/PricingManagementPage';
+import PrivacyPolicy from './components/legal/PrivacyPolicy';
+import TermsOfService from './components/legal/TermsOfService';
+import GoogleVerificationLinks from './components/legal/GoogleVerificationLinks';
 
 // Wrapper component to handle landing page navigation
 const LandingPageWrapper = ({ onSignInSuccess }) => {
@@ -204,6 +207,11 @@ const App = () => {
             <PricingManagementPage />
           )
         } />
+        
+        {/* Legal Pages - Public Access */}
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/google-verification" element={<GoogleVerificationLinks />} />
           
         </Routes>
       </Router>
