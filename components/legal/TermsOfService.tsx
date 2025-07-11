@@ -232,7 +232,7 @@ const TermsOfService: React.FC = () => {
               <p className="text-sm text-gray-600">
                 <strong>Privacy Policy:</strong> Available at{' '}
                 <a href="/privacy" className="text-blue-600 hover:text-blue-700 underline">
-                  https://aijobagent.ngazi.co.ke/privacy
+                  Link
                 </a>
               </p>
             </div>

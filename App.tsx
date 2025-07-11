@@ -136,17 +136,7 @@ const App = () => {
           )
         } />
         
-        {/* Catch-all route */}
-        <Route path="*" element={
-          !isSignedIn ? (
-            <LandingPageWrapper onSignInSuccess={handleSignInSuccess} />
-          ) : (
-            <>
-              <Dashboard />
-              <EnhancedChatbot />
-            </>
-          )
-        } />
+        
         {/* Gmail account section route */}
         {/* <Route path="/email" element={ 
           !isSignedIn ? (
@@ -212,8 +202,17 @@ const App = () => {
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/google-verification" element={<GoogleVerificationLinks />} />
-          
+         {/* Catch-all route */}
+        <Route path="*" element={
+          !isSignedIn ? (
+            <LandingPageWrapper onSignInSuccess={handleSignInSuccess} /> 
+          ) : (
+            <>
+              <Dashboard />
+              <EnhancedChatbot />
+            </>          )} /> 
         </Routes>
+        
       </Router>
         </SubscriptionProvider>
       </GmailProvider>
