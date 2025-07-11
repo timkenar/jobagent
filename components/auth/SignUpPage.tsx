@@ -30,6 +30,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignInSuccess, isSignIn = fal
   const [isLoading, setIsLoading] = useState(false);
   const [showEmailVerification, setShowEmailVerification] = useState(false);
   const [userEmail, setUserEmail] = useState('');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   // GSAP refs for animation
   const logoRef = useRef<HTMLDivElement>(null);
@@ -83,6 +84,10 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignInSuccess, isSignIn = fal
       setError('All fields are required.');
       return;
     }
+    if (authMode === 'signup' && !agreedToTerms) {
+      setError('You must agree to the Terms of Service and Privacy Policy to sign up.');
+      return;
+    }
     if (!/\S+@\S+\.\S+/.test(email)) {
       setError('Please enter a valid email address.');
       return;
@@ -132,6 +137,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignInSuccess, isSignIn = fal
     setFullName('');
     setEmail('');
     setPassword('');
+    setAgreedToTerms(false);
     setShowEmailVerification(false);
     setUserEmail('');
   };
@@ -255,10 +261,47 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignInSuccess, isSignIn = fal
               disabled={isLoading}
             />
           </div>
+          
+          {/* Terms of Service and Privacy Policy Checkbox - Only for Sign Up */}
+          {authMode === 'signup' && (
+            <div className="flex items-start space-x-3">
+              <input
+                id="agreedToTerms"
+                name="agreedToTerms"
+                type="checkbox"
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                className="mt-1 h-4 w-4 text-sky-600 border-gray-300 rounded focus:ring-sky-500 focus:ring-2"
+                disabled={isLoading}
+                required
+              />
+              <label htmlFor="agreedToTerms" className="text-sm text-slate-700">
+                I agree to the{' '}
+                <a
+                  href="/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sky-600 hover:text-sky-700 underline font-medium"
+                >
+                  Terms of Service
+                </a>{' '}
+                and{' '}
+                <a
+                  href="/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sky-600 hover:text-sky-700 underline font-medium"
+                >
+                  Privacy Policy
+                </a>
+              </label>
+            </div>
+          )}
+          
           <div>
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || (authMode === 'signup' && !agreedToTerms)}
               className="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 px-4 rounded-xl shadow-md transition-colors duration-150 ease-in-out disabled:opacity-60 flex items-center justify-center text-lg"
             >
               {isLoading ? <LoadingSpinner size={5} /> : authMode === 'signup' ? 'Sign Up' : 'Sign In'}
