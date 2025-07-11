@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, RotateCcw, Send, Bot, User } from 'lucide-react';
+import { API_CONFIG } from '../../src/config/api';
 
 const ChatBotWidget = () => {
   const [input, setInput] = useState('');
@@ -52,7 +53,7 @@ const ChatBotWidget = () => {
   }, [input]);
 
   const sendChatbotMessage = async (question) => {
-    const API_BASE_URL = 'http://localhost:8000/api'; // Removed import.meta for compatibility
+    const API_BASE_URL = `${API_CONFIG.BASE_URL}/api`;
     
     try {
       const response = await fetch(`${API_BASE_URL}/chatbot/ask/`, {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useGmail } from '../../src/contexts/GmailContext';
 import axios from 'axios';
+import { API_CONFIG } from '../../src/config/api';
 
 interface EmailCategory {
   category: 'application' | 'interview' | 'offer' | 'rejection' | 'follow_up' | 'other';
@@ -64,7 +65,7 @@ const ApplicationTracker: React.FC = () => {
         return;
       }
 
-      const response = await axios.get('http://localhost:8000/api/job-applications/', {
+      const response = await axios.get(`${API_CONFIG.BASE_URL}/api/job-applications/`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -234,7 +235,7 @@ const ApplicationTracker: React.FC = () => {
       const token = getAuthToken();
       if (!token) return;
 
-      await axios.patch(`http://localhost:8000/api/job-applications/${id}/`, {
+      await axios.patch(`${API_CONFIG.BASE_URL}/api/job-applications/${id}/`, {
         status: newStatus
       }, {
         headers: { Authorization: `Bearer ${token}` }

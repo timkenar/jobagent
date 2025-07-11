@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useGmail } from '../../src/contexts/GmailContext';
 import gmailService from '../../src/services/gmailService';
+import { API_CONFIG } from '../../src/config/api';
 
 interface Message {
   id: number;
@@ -108,7 +109,7 @@ const EnhancedChatbot: React.FC = () => {
 
   const sendChatbotMessage = async (question: string) => {
     try {
-      const response = await fetch('http://localhost:8000/api/chatbot/ask/', {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/chatbot/ask/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

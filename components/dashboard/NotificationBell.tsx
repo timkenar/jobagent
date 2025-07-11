@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { API_CONFIG } from '../../src/config/api';
 
 interface Notification {
   id: number;
@@ -22,11 +23,10 @@ const NotificationBell: React.FC = () => {
         return;
       }
       
-      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      // Use the current host, assuming frontend and backend are served from the same domain.
-      // The backend Channels server needs to be running.
-      // const wsUrl = `${wsProtocol}//${window.location.host}/ws/notifications/?token=${token}`;
-      const wsUrl = `${wsProtocol}//localhost:8000/ws/notifications/?token=${token}`;
+      // Extract hostname from API_CONFIG.BASE_URL
+      const apiUrl = new URL(API_CONFIG.BASE_URL);
+      const wsProtocol = apiUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${wsProtocol}//${apiUrl.host}/ws/notifications/?token=${token}`;
 
       
       socket.current = new WebSocket(wsUrl);
@@ -75,7 +75,7 @@ const NotificationBell: React.FC = () => {
   const fetchInitialNotifications = async () => {
     try {
       const token = localStorage.getItem('authToken');
-      const response = await fetch('/api/notifications/', {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/notifications/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

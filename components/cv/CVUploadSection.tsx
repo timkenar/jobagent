@@ -25,29 +25,123 @@ const CVUploadSection: React.FC = () => {
   const [cv, setCV] = useState<CVData | null>(null);
   const [uploading, setUploading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [dragActive, setDragActive] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Cache keys
+  const CV_CACHE_KEY = 'cv_data_cache';
+  const CV_CACHE_TIMESTAMP_KEY = 'cv_cache_timestamp';
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+  // Helper function to get base URL
+  const getBaseUrl = () => API_CONFIG.BASE_URL ;
+  
+  // Helper function to get auth headers
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('authToken');
+    if (!token) throw new Error('Authentication required');
+    return { Authorization: `Bearer ${token}` };
+  };
+
+  // Cache helper functions
+  const getCachedCV = (): CVData | null => {
+    try {
+      const cachedData = localStorage.getItem(CV_CACHE_KEY);
+      const cacheTimestamp = localStorage.getItem(CV_CACHE_TIMESTAMP_KEY);
+      
+      if (cachedData && cacheTimestamp) {
+        const age = Date.now() - parseInt(cacheTimestamp);
+        if (age < CACHE_DURATION) {
+          return JSON.parse(cachedData);
+        } else {
+          // Cache expired, clear it
+          localStorage.removeItem(CV_CACHE_KEY);
+          localStorage.removeItem(CV_CACHE_TIMESTAMP_KEY);
+        }
+      }
+    } catch (error) {
+      console.error('Error reading CV cache:', error);
+    }
+    return null;
+  };
+
+  const setCVCache = (cvData: CVData | null) => {
+    try {
+      if (cvData) {
+        localStorage.setItem(CV_CACHE_KEY, JSON.stringify(cvData));
+        localStorage.setItem(CV_CACHE_TIMESTAMP_KEY, Date.now().toString());
+      } else {
+        localStorage.removeItem(CV_CACHE_KEY);
+        localStorage.removeItem(CV_CACHE_TIMESTAMP_KEY);
+      }
+    } catch (error) {
+      console.error('Error setting CV cache:', error);
+    }
+  };
+
   React.useEffect(() => {
-    fetchActiveCV();
+    initializeCV();
   }, []);
 
-  const fetchActiveCV = async () => {
+  const initializeCV = async () => {
+    setLoading(true);
+    
+    // Try to load from cache first
+    const cachedCV = getCachedCV();
+    if (cachedCV) {
+      setCV(cachedCV);
+      setLoading(false);
+      
+      // Fetch fresh data in background
+      fetchActiveCV(true);
+    } else {
+      // No cache, fetch fresh data
+      await fetchActiveCV();
+    }
+  };
+
+  const fetchActiveCV = async (isBackgroundUpdate: boolean = false) => {
     try {
       const token = localStorage.getItem('authToken');
-      if (!token) return;
+      if (!token) {
+        setLoading(false);
+        return;
+      }
 
-      const response = await axios.get(`${API_CONFIG.BASE_URL}/api/cvs/active/`, {
+      if (!isBackgroundUpdate) {
+        setLoading(true);
+      }
+
+      const baseUrl = API_CONFIG.BASE_URL ;
+      const url = `${baseUrl}/api/cvs/active/`;
+      
+      console.log('Fetching active CV from URL:', url); // Debug log
+      
+      const response = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      setCV(response.data);
+      const cvData = response.data;
+      setCV(cvData);
+      setCVCache(cvData); // Cache the fresh data
+      
     } catch (err: any) {
       if (err.response?.status !== 404) {
         console.error('Error fetching CV:', err);
+        if (!isBackgroundUpdate) {
+          setError('Failed to fetch CV data.');
+        }
+      } else {
+        // No CV found, clear cache
+        setCVCache(null);
       }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -80,14 +174,27 @@ const CVUploadSection: React.FC = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await axios.post(`${API_CONFIG.BASE_URL}/api/cvs/`, formData, {
+      const baseUrl = API_CONFIG.BASE_URL ;
+      const url = `${baseUrl}/api/cvs/`;
+      
+      console.log('Uploading CV to URL:', url); // Debug log
+      
+      const response = await axios.post(url, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
         },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setUploadProgress(progress);
+          }
+        }
       });
 
-      setCV(response.data);
+      const cvData = response.data;
+      setCV(cvData);
+      setCVCache(cvData); // Cache the new CV data
       setSuccessMessage('CV uploaded successfully! AI analysis is in progress...');
       setAnalyzing(true);
 
@@ -107,19 +214,28 @@ const CVUploadSection: React.FC = () => {
   const checkAnalysisStatus = async (cvId: number) => {
     try {
       const token = localStorage.getItem('authToken');
-      if (!token) return;
+      if (!token || !cvId) return;
 
-      const response = await axios.get(`${API_CONFIG.BASE_URL}/api/cvs/${cvId}/`, {
+      const baseUrl = API_CONFIG.BASE_URL ;
+      const url = `${baseUrl}/api/cvs/${cvId}/`;
+      
+      console.log('Checking analysis status for URL:', url); // Debug log
+      
+      const response = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       if (response.data.analyzed_at) {
-        setCV(response.data);
+        const cvData = response.data;
+        setCV(cvData);
+        setCVCache(cvData); // Cache updated CV with analysis
         setAnalyzing(false);
+        setAnalysisProgress(100);
         setSuccessMessage('CV analysis completed! ✨');
         setTimeout(() => setSuccessMessage(''), 3000);
       } else {
-        // Continue polling
+        // Continue polling and update progress
+        setAnalysisProgress(prev => Math.min(prev + 10, 90)); // Increment progress
         setTimeout(() => checkAnalysisStatus(cvId), 3000);
       }
     } catch (err) {
@@ -159,39 +275,108 @@ const CVUploadSection: React.FC = () => {
   };
 
   const reanalyzeCV = async () => {
-    if (!cv) return;
+    if (!cv || !cv.id) return;
 
     setAnalyzing(true);
+    setError('');
+    
     try {
       const token = localStorage.getItem('authToken');
-      await axios.post(`${API_CONFIG.BASE_URL}/api/cvs/${cv.id}/reanalyze/`, {}, {
+      if (!token) {
+        setError('Authentication required to reanalyze CV.');
+        setAnalyzing(false);
+        return;
+      }
+
+      const baseUrl = API_CONFIG.BASE_URL ;
+      const url = `${baseUrl}/api/cvs/${cv.id}/reanalyze/`;
+      
+      console.log('Reanalyzing CV with URL:', url); // Debug log
+      
+      await axios.post(url, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
+      setSuccessMessage('CV reanalysis started. Please wait...');
+      
       setTimeout(() => {
         checkAnalysisStatus(cv.id);
       }, 3000);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error reanalyzing CV:', err);
+      const errorMessage = err.response?.data?.error || err.message || 'Failed to reanalyze CV.';
+      setError(errorMessage);
       setAnalyzing(false);
     }
   };
 
   const deleteCV = async () => {
-    if (!cv || !confirm('Are you sure you want to delete this CV?')) return;
+    if (!cv || !cv.id || !confirm('Are you sure you want to delete this CV?')) return;
 
     try {
       const token = localStorage.getItem('authToken');
-      await axios.delete(`${API_CONFIG.BASE_URL}/api/cvs/${cv.id}/`, {
+      if (!token) {
+        setError('Authentication required to delete CV.');
+        return;
+      }
+
+      const baseUrl = API_CONFIG.BASE_URL ;
+      const url = `${baseUrl}/api/cvs/${cv.id}/`;
+      
+      console.log('Deleting CV with URL:', url); // Debug log
+      
+      await axios.delete(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       setCV(null);
+      setCVCache(null); // Clear cache when CV is deleted
       setSuccessMessage('CV deleted successfully.');
       setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error deleting CV:', err);
-      setError('Failed to delete CV.');
+      const errorMessage = err.response?.data?.error || err.message || 'Failed to delete CV.';
+      setError(errorMessage);
+    }
+  };
+
+  // UPDATE operation - Update CV metadata
+  const updateCVMetadata = async (updates: Partial<CVData>) => {
+    if (!cv || !cv.id) return;
+
+    try {
+      const headers = getAuthHeaders();
+      const url = `${getBaseUrl()}/api/cvs/${cv.id}/`;
+      
+      console.log('Updating CV metadata with URL:', url); // Debug log
+      
+      const response = await axios.patch(url, updates, { headers });
+      
+      setCV(response.data);
+      setSuccessMessage('CV updated successfully.');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err: any) {
+      console.error('Error updating CV:', err);
+      const errorMessage = err.response?.data?.error || err.message || 'Failed to update CV.';
+      setError(errorMessage);
+    }
+  };
+
+  // LIST operation - Get all user CVs
+  const getAllCVs = async () => {
+    try {
+      const headers = getAuthHeaders();
+      const url = `${getBaseUrl()}/api/cvs/`;
+      
+      console.log('Fetching all CVs from URL:', url); // Debug log
+      
+      const response = await axios.get(url, { headers });
+      return response.data;
+    } catch (err: any) {
+      console.error('Error fetching all CVs:', err);
+      const errorMessage = err.response?.data?.error || err.message || 'Failed to fetch CVs.';
+      setError(errorMessage);
+      return [];
     }
   };
 
@@ -209,6 +394,56 @@ const CVUploadSection: React.FC = () => {
           <p className="text-gray-600 text-sm">Upload your CV for AI-powered job matching</p>
         </div>
       </div>
+
+      {/* Loading State */}
+      {loading && (
+        <div className="mb-6 p-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+          <div className="flex items-center justify-center space-x-3">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+            <div className="text-purple-700 font-medium">Loading your CV data...</div>
+          </div>
+          <div className="mt-3 bg-purple-200 rounded-full h-2">
+            <div className="bg-purple-600 h-2 rounded-full transition-all duration-300" 
+                 style={{ width: '60%' }}></div>
+          </div>
+        </div>
+      )}
+
+      {/* Upload Progress */}
+      {uploading && (
+        <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-blue-700 font-medium">Uploading CV...</span>
+            <span className="text-blue-600 text-sm">{uploadProgress}%</span>
+          </div>
+          <div className="bg-blue-200 rounded-full h-2">
+            <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                 style={{ width: `${uploadProgress}%` }}></div>
+          </div>
+        </div>
+      )}
+
+      {/* Analysis Progress */}
+      {analyzing && (
+        <div className="mb-6 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center space-x-2">
+              <div className="animate-pulse flex space-x-1">
+                <div className="w-2 h-2 bg-emerald-600 rounded-full"></div>
+                <div className="w-2 h-2 bg-emerald-600 rounded-full animation-delay-200"></div>
+                <div className="w-2 h-2 bg-emerald-600 rounded-full animation-delay-400"></div>
+              </div>
+              <span className="text-emerald-700 font-medium">AI analyzing your CV...</span>
+            </div>
+            <span className="text-emerald-600 text-sm">{analysisProgress}%</span>
+          </div>
+          <div className="bg-emerald-200 rounded-full h-2">
+            <div className="bg-emerald-600 h-2 rounded-full transition-all duration-500" 
+                 style={{ width: `${analysisProgress}%` }}></div>
+          </div>
+          <p className="text-emerald-600 text-xs mt-2">Extracting skills, experience, and job categories...</p>
+        </div>
+      )}
 
       {/* Messages */}
       {successMessage && (
@@ -291,7 +526,7 @@ const CVUploadSection: React.FC = () => {
                 <div>
                   <h4 className="font-medium text-gray-900">{cv.original_filename}</h4>
                   <p className="text-sm text-gray-500">
-                    {cv.file_size_formatted} • {cv.file_type.toUpperCase()} • 
+                    {cv.file_size_formatted} • {cv.file_type?.toUpperCase() || 'PDF'} • 
                     Uploaded {new Date(cv.uploaded_at).toLocaleDateString()}
                   </p>
                 </div>
@@ -393,6 +628,7 @@ const CVUploadSection: React.FC = () => {
                         <span className="ml-2 text-gray-600 capitalize">{cv.seniority_level}</span>
                       </div>
                     )}
+                    {/* To make changes in currency based on the counties */}
                     {(cv.salary_range_min || cv.salary_range_max) && (
                       <div>
                         <span className="font-medium text-gray-700">Expected Salary:</span>

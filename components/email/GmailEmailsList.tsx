@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_CONFIG } from '../../src/config/api';
 
 interface GmailEmail {
   id: string;
@@ -32,7 +33,7 @@ const GmailEmailsList: React.FC<GmailEmailsListProps> = ({ emailAccountId }) => 
       }
 
       const response = await axios.get(
-        `http://localhost:8000/api/email-accounts/${emailAccountId}/gmail-emails/`,
+        `${API_CONFIG.BASE_URL}/api/email-accounts/${emailAccountId}/gmail-emails/`,
         {
           headers: { Authorization: `Bearer ${token}` },
           params: { max_results: 10 }

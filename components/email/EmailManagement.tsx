@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, Search, Plus, RefreshCw, Filter, Reply, Forward, X, Paperclip, Calendar, Building, Briefcase, CheckCircle, XCircle, Clock, AlertCircle } from 'lucide-react';
 import { useGmail } from '../../src/contexts/GmailContext';
+import EmailIntegrationSection from './EmailIntegrationSection';
 
 interface Email {
   id: string;
@@ -38,7 +39,7 @@ const EmailManagement: React.FC = () => {
   const [emails, setEmails] = useState<Email[]>([]);
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'inbox' | 'templates' | 'compose'>('inbox');
+  const [activeTab, setActiveTab] = useState<'inbox' | 'templates' | 'compose' | 'integration'>('inbox');
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null);
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -252,21 +253,16 @@ Best regards,
 
   if (!isGmailConnected) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <AlertCircle className="w-8 h-8 text-red-600" />
+          <div className="mb-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <Mail className="w-8 h-8 text-blue-600" />
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Email Manager</h1>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Gmail Not Connected</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">Please connect your Gmail account to manage emails.</p>
-            <button
-              onClick={refreshAccounts}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
-            >
-              Refresh Connection
-            </button>
+            <p className="text-gray-600 dark:text-gray-400">Connect your email account to manage and track job applications automatically.</p>
           </div>
+          <EmailIntegrationSection />
         </div>
       </div>
     );
@@ -351,11 +347,12 @@ Best regards,
           </div>
 
           {/* Tabs */}
-          <div className="flex space-x-6 mt-4">
+          <div className="flex space-x-6 mt-4 overflow-x-auto">
             {[
               { id: 'inbox', label: 'Inbox', count: emails.length },
               { id: 'templates', label: 'Templates', count: templates.length },
-              { id: 'compose', label: 'Compose', count: null }
+              { id: 'compose', label: 'Compose', count: null },
+              { id: 'integration', label: 'Email Accounts', count: null }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -688,6 +685,10 @@ Best regards,
               </div>
             </div>
           </div>
+        )}
+
+        {activeTab === 'integration' && (
+          <EmailIntegrationSection />
         )}
       </div>
     </div>

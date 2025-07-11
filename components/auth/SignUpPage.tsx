@@ -178,7 +178,7 @@ const SignUpPage: React.FC<SignUpPageProps> = ({ onSignInSuccess, isSignIn = fal
           
           {/* LinkedIn Sign-In Button */}
           <a
-            href={`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/accounts/linkedin_oauth2/login/`}
+            href={`${process.env.REACT_APP_API_URL}/accounts/linkedin_oauth2/login/`}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl shadow-md transition-colors duration-150 ease-in-out flex items-center justify-center text-base"
           >
             <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">

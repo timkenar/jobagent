@@ -68,7 +68,8 @@ const JobRecommendations: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      setJobMatches(response.data.results || response.data);
+      const data = response.data.results || response.data;
+      setJobMatches(Array.isArray(data) ? data : []);
     } catch (err: any) {
       console.error('Error fetching job matches:', err);
       setError('Failed to load job recommendations');
@@ -381,7 +382,7 @@ const JobRecommendations: React.FC = () => {
 
       {/* Job Results */}
       {activeTab === 'backend' && (
-        jobMatches.length === 0 ? (
+        !Array.isArray(jobMatches) || jobMatches.length === 0 ? (
           <div className="text-center py-8">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -396,7 +397,7 @@ const JobRecommendations: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-4">
-            {jobMatches.map((match) => (
+            {(Array.isArray(jobMatches) ? jobMatches : []).map((match) => (
               <div key={match.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">

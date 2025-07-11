@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { API_CONFIG } from '../../src/config/api';
 
 interface AddApplicationFormProps {
   onClose: () => void;
@@ -50,7 +51,7 @@ const AddApplicationForm: React.FC<AddApplicationFormProps> = ({ onClose, onSucc
         throw new Error('Authentication required');
       }
 
-      const response = await axios.post('http://localhost:8000/api/job-applications/', formData, {
+      const response = await axios.post(`${API_CONFIG.BASE_URL}/api/job-applications/`, formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

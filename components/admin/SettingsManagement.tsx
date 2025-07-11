@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_CONFIG } from '../../src/config/api';
 
 interface AppSetting {
   id: number;
@@ -36,7 +37,7 @@ const SettingsManagement: React.FC = () => {
   const fetchSettings = async () => {
     try {
       const token = localStorage.getItem('authToken');
-      const response = await axios.get('http://localhost:8000/api/settings/by_category/', {
+      const response = await axios.get(`${API_CONFIG.BASE_URL}/api/settings/by_category/`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setSettingsByCategory(response.data);
@@ -52,7 +53,7 @@ const SettingsManagement: React.FC = () => {
     setSaving(prev => ({ ...prev, [settingId]: true }));
     try {
       const token = localStorage.getItem('authToken');
-      await axios.patch(`http://localhost:8000/api/settings/${settingId}/`, {
+      await axios.patch(`${API_CONFIG.BASE_URL}/api/settings/${settingId}/`, {
         value: newValue
       }, {
         headers: { Authorization: `Bearer ${token}` }

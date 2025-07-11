@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import axios from 'axios';
+import { API_CONFIG } from '../config/api';
 
 interface GmailEmail {
   id: string;
@@ -85,7 +86,7 @@ export const GmailProvider: React.FC<GmailProviderProps> = ({ children }) => {
         return;
       }
 
-      const response = await axios.get('http://localhost:8000/api/email-accounts/', {
+      const response = await axios.get(`${API_CONFIG.BASE_URL}/api/email-accounts/`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -128,7 +129,7 @@ export const GmailProvider: React.FC<GmailProviderProps> = ({ children }) => {
       }
 
       const response = await axios.get(
-        `http://localhost:8000/api/email-accounts/${gmailAccount.id}/gmail-emails/?${params.toString()}`,
+        `${API_CONFIG.BASE_URL}/api/email-accounts/${gmailAccount.id}/gmail-emails/?${params.toString()}`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }

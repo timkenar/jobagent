@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { AddApplicationForm } from '../jobs';
+import { API_CONFIG } from '../../src/config/api';
 
 interface JobApplication {
   id: number;
@@ -54,7 +55,7 @@ const JobApplicationDashboard: React.FC = () => {
         return;
       }
 
-      const response = await axios.get('http://localhost:8000/api/job-applications/', {
+      const response = await axios.get(`${API_CONFIG.BASE_URL}/api/job-applications/`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

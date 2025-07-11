@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { API_CONFIG } from '../config/api';
 
 type Theme = 'light' | 'dark' | 'system';
 type ResolvedTheme = 'light' | 'dark';
@@ -105,7 +106,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
       const token = localStorage.getItem('authToken');
       if (!token) return;
 
-      const response = await fetch('http://localhost:8000/api/user/preferences/', {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/user/preferences/`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -131,7 +132,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
       const token = localStorage.getItem('authToken');
       if (!token) return null;
 
-      const response = await fetch('http://localhost:8000/api/user/preferences/', {
+      const response = await fetch(`${API_CONFIG.BASE_URL}/api/user/preferences/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
