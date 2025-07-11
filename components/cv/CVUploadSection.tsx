@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import axios from 'axios';
+import { API_CONFIG } from '../../src/config/api'; // Add this import
 
 interface CVData {
   id: number;
@@ -38,7 +39,7 @@ const CVUploadSection: React.FC = () => {
       const token = localStorage.getItem('authToken');
       if (!token) return;
 
-      const response = await axios.get('http://localhost:8000/api/cvs/active/', {
+      const response = await axios.get(`${API_CONFIG.BASE_URL}/api/cvs/active/`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -79,7 +80,7 @@ const CVUploadSection: React.FC = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await axios.post('http://localhost:8000/api/cvs/', formData, {
+      const response = await axios.post(`${API_CONFIG.BASE_URL}/api/cvs/`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
@@ -108,7 +109,7 @@ const CVUploadSection: React.FC = () => {
       const token = localStorage.getItem('authToken');
       if (!token) return;
 
-      const response = await axios.get(`http://localhost:8000/api/cvs/${cvId}/`, {
+      const response = await axios.get(`${API_CONFIG.BASE_URL}/api/cvs/${cvId}/`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -163,7 +164,7 @@ const CVUploadSection: React.FC = () => {
     setAnalyzing(true);
     try {
       const token = localStorage.getItem('authToken');
-      await axios.post(`http://localhost:8000/api/cvs/${cv.id}/reanalyze/`, {}, {
+      await axios.post(`${API_CONFIG.BASE_URL}/api/cvs/${cv.id}/reanalyze/`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -181,7 +182,7 @@ const CVUploadSection: React.FC = () => {
 
     try {
       const token = localStorage.getItem('authToken');
-      await axios.delete(`http://localhost:8000/api/cvs/${cv.id}/`, {
+      await axios.delete(`${API_CONFIG.BASE_URL}/api/cvs/${cv.id}/`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
