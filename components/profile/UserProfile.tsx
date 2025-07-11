@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CVUploadSection } from '../cv';
 import { JobRecommendations } from '../jobs';
+import { useSubscription } from '../subscriptions/context/SubscriptionContext';
 
 interface User {
   id: string;
@@ -10,6 +12,8 @@ interface User {
 }
 
 const UserProfile: React.FC = () => {
+  const navigate = useNavigate();
+  const { currentSubscription, stats: subscriptionStats } = useSubscription();
   const [user, setUser] = useState<User | null>(null);
   const [stats, setStats] = useState({
     emailsConnected: 0,
@@ -73,7 +77,10 @@ const UserProfile: React.FC = () => {
               <p className="text-blue-100">{user.email}</p>
               <div className="mt-2 flex items-center space-x-2">
                 <span className="bg-white bg-opacity-20 px-2 py-1 rounded-full text-sm">
-                  Premium User
+                  {currentSubscription?.status === 'active' ? 
+                    `${currentSubscription.plan.name} User` : 
+                    'Free User'
+                  }
                 </span>
               </div>
             </div>
@@ -83,16 +90,22 @@ const UserProfile: React.FC = () => {
         <div className="p-6">
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">{stats.emailsConnected}</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {subscriptionStats?.usage_stats?.email_accounts?.used || stats.emailsConnected}
+              </div>
               <div className="text-sm text-gray-600">Emails Connected</div>
             </div>
             <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">{stats.jobApplications}</div>
+              <div className="text-2xl font-bold text-green-600">
+                {subscriptionStats?.usage_stats?.job_applications?.used || stats.jobApplications}
+              </div>
               <div className="text-sm text-gray-600">Applications Tracked</div>
             </div>
             <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <div className="text-2xl font-bold text-purple-600">{stats.emailsGenerated}</div>
-              <div className="text-sm text-gray-600">Emails Generated</div>
+              <div className="text-2xl font-bold text-purple-600">
+                {subscriptionStats?.usage_stats?.ai_requests?.used || stats.emailsGenerated}
+              </div>
+              <div className="text-sm text-gray-600">AI Requests Used</div>
             </div>
           </div>
         </div>
@@ -140,10 +153,20 @@ const UserProfile: React.FC = () => {
               </svg>
               <div>
                 <div className="font-medium text-gray-900">Subscription</div>
-                <div className="text-sm text-gray-500">Premium plan - Active</div>
+                <div className="text-sm text-gray-500">
+                  {currentSubscription?.status === 'active' ? 
+                    `${currentSubscription.plan.name} - Active` : 
+                    subscriptionStats?.has_active_subscription ? 
+                      'Active' : 
+                      'Free plan'
+                  }
+                </div>
               </div>
             </div>
-            <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+            <button 
+              onClick={() => navigate('/subscriptions/dashboard')}
+              className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+            >
               Manage
             </button>
           </div>

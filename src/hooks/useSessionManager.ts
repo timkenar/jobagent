@@ -37,19 +37,19 @@ export const useSessionManager = ({ isSignedIn, authToken, handleSignOut }: UseS
     }
   }, [authToken, isSignedIn, handleSignOut]);
 
-  // Auto-logout on tab close/refresh
-  useEffect(() => {
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (isSignedIn) {
-        // Note: This doesn't actually sign out, it just warns the user
-        event.preventDefault();
-        event.returnValue = 'Are you sure you want to leave? You will be signed out.';
-      }
-    };
+  // Auto-logout on tab close/refresh - DISABLED to prevent annoying warnings
+  // useEffect(() => {
+  //   const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+  //     if (isSignedIn) {
+  //       // Note: This doesn't actually sign out, it just warns the user
+  //       event.preventDefault();
+  //       event.returnValue = 'Are you sure you want to leave? You will be signed out.';
+  //     }
+  //   };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [isSignedIn]);
+  //   window.addEventListener('beforeunload', handleBeforeUnload);
+  //   return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  // }, [isSignedIn]);
 
   // Validate session on mount and when dependencies change
   useEffect(() => {

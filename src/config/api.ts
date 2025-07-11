@@ -68,6 +68,20 @@ export const API_ENDPOINTS = {
     LIST: '/notifications/',
     PREFERENCES: '/notifications/preferences/',
   },
+  
+  // Subscriptions
+  SUBSCRIPTIONS: {
+    PLANS: '/api/subscriptions/plans/',
+    CURRENT: '/api/subscriptions/current/',
+    SUBSCRIBE: '/api/subscriptions/subscribe/',
+    CANCEL: '/api/subscriptions/cancel/',
+    REACTIVATE: '/api/subscriptions/reactivate/',
+    STATS: '/api/subscriptions/stats/',
+    PAYMENT_HISTORY: '/api/subscriptions/payment-history/',
+    VERIFY_PAYMENT: '/api/subscriptions/verify-payment/',
+    INITIALIZE_PAYMENT: '/api/subscriptions/payments/initialize/',
+    EXCHANGE_RATES: '/api/subscriptions/exchange-rates/',
+  },
 };
 
 // Helper function to build full URL

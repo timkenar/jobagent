@@ -4,6 +4,7 @@ import { useJobSearch } from './src/hooks/useJobSearch';
 import { useSessionManager } from './src/hooks/useSessionManager';
 import { GmailProvider } from './src/contexts/GmailContext';
 import { ThemeProvider } from './src/contexts/ThemeContext';
+import { SubscriptionProvider } from './components/subscriptions/context/SubscriptionContext';
 import {
   SignUpPage,
   EmailVerificationPage,
@@ -14,6 +15,12 @@ import { Dashboard } from './components/dashboard';
 import { LoadingSpinner, EnhancedChatbot } from './components/shared';
 import Emails from './components/email/Email';
 import LandingPage from './components/LandingPage';
+import PlansPage from './components/subscriptions/pages/PlansPage';
+import DashboardPage from './components/subscriptions/pages/DashboardPage';
+import BillingPage from './components/subscriptions/pages/BillingPage';
+import SettingsPage from './components/subscriptions/pages/SettingsPage';
+import PaymentCallbackPage from './components/subscriptions/pages/PaymentCallbackPage';
+import PricingManagementPage from './components/subscriptions/pages/PricingManagementPage';
 
 // Wrapper component to handle landing page navigation
 const LandingPageWrapper = ({ onSignInSuccess }) => {
@@ -78,8 +85,9 @@ const App = () => {
   return (
     <ThemeProvider defaultTheme="system">
       <GmailProvider>
-        <Router>
-        <Routes>
+        <SubscriptionProvider>
+          <Router>
+          <Routes>
         {/* Email verification route - accessible without being signed in */}
         <Route path="/verify-email" element={<EmailVerificationPage />} />
         
@@ -147,11 +155,59 @@ const App = () => {
             </>
           )
         } /> */}
-          
-          
+        
+        {/* Subscription Routes - Protected */}
+        <Route path="/subscriptions/plans" element={
+          !isSignedIn ? (
+            <SignUpPage onSignInSuccess={handleSignInSuccess} />
+          ) : (
+            <PlansPage />
+          )
+        } />
+        
+        <Route path="/subscriptions/dashboard" element={
+          !isSignedIn ? (
+            <SignUpPage onSignInSuccess={handleSignInSuccess} />
+          ) : (
+            <DashboardPage />
+          )
+        } />
+        
+        <Route path="/subscriptions/billing" element={
+          !isSignedIn ? (
+            <SignUpPage onSignInSuccess={handleSignInSuccess} />
+          ) : (
+            <BillingPage />
+          )
+        } />
+        
+        <Route path="/subscriptions/settings" element={
+          !isSignedIn ? (
+            <SignUpPage onSignInSuccess={handleSignInSuccess} />
+          ) : (
+            <SettingsPage />
+          )
+        } />
+        
+        <Route path="/subscriptions/callback" element={
+          !isSignedIn ? (
+            <SignUpPage onSignInSuccess={handleSignInSuccess} />
+          ) : (
+            <PaymentCallbackPage />
+          )
+        } />
+        
+        <Route path="/subscriptions/admin" element={
+          !isSignedIn ? (
+            <SignUpPage onSignInSuccess={handleSignInSuccess} />
+          ) : (
+            <PricingManagementPage />
+          )
+        } />
           
         </Routes>
       </Router>
+        </SubscriptionProvider>
       </GmailProvider>
     </ThemeProvider>
   );
