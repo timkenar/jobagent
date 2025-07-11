@@ -10,6 +10,7 @@ import { EmailManagement } from '../email';
 import { AutomationDashboard } from '../automation';
 import ThemeToggle from '../shared/ThemeToggle';
 import NotificationBell from './NotificationBell';
+import JobSearchSection from '../jobs/JobSearchSection';
 
 
 // Settings Component
@@ -179,6 +180,17 @@ const Settings: React.FC = () => {
 const Dashboard: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string>('dashboard');
   
+  // Job search state
+  const [jobSearchQuery, setJobSearchQuery] = useState<string>('');
+  const [jobResults, setJobResults] = useState<any[]>([]);
+  const [isLoadingJobSearch, setIsLoadingJobSearch] = useState<boolean>(false);
+  const [selectedJobForEmail, setSelectedJobForEmail] = useState<any>(null);
+  const [generatedEmail, setGeneratedEmail] = useState<any>(null);
+  const [isLoadingEmail, setIsLoadingEmail] = useState<boolean>(false);
+  const [emailCopied, setEmailCopied] = useState<boolean>(false);
+  const [isEmailSending, setIsEmailSending] = useState<boolean>(false);
+  const [emailSentMessage, setEmailSentMessage] = useState<string | null>(null);
+  
   const {
     isSignedIn,
     authToken,
@@ -190,14 +202,120 @@ const Dashboard: React.FC = () => {
     return null; // This will be handled by App.tsx
   }
 
+  // Job search handlers
+  const handleSearchJobs = async () => {
+    setIsLoadingJobSearch(true);
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('/api/jobs/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ query: jobSearchQuery }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setJobResults(data.jobs || []);
+      }
+    } catch (error) {
+      console.error('Error searching jobs:', error);
+    } finally {
+      setIsLoadingJobSearch(false);
+    }
+  };
+
+  const handleGenerateEmail = async (job: any) => {
+    setIsLoadingEmail(true);
+    setSelectedJobForEmail(job);
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('/api/emails/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ job }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setGeneratedEmail(data);
+      }
+    } catch (error) {
+      console.error('Error generating email:', error);
+    } finally {
+      setIsLoadingEmail(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setGeneratedEmail(null);
+    setSelectedJobForEmail(null);
+    setEmailCopied(false);
+    setEmailSentMessage(null);
+  };
+
+  const handleCopyToClipboard = () => {
+    if (generatedEmail) {
+      navigator.clipboard.writeText(generatedEmail.emailContent);
+      setEmailCopied(true);
+      setTimeout(() => setEmailCopied(false), 2000);
+    }
+  };
+
+  const handleSendEmail = async (recipientEmail: string, subject: string, body: string) => {
+    setIsEmailSending(true);
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch('/api/emails/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ recipientEmail, subject, body }),
+      });
+      
+      if (response.ok) {
+        setEmailSentMessage('Email sent successfully!');
+      }
+    } catch (error) {
+      console.error('Error sending email:', error);
+      setEmailSentMessage('Failed to send email.');
+    } finally {
+      setIsEmailSending(false);
+    }
+  };
+
   const renderMainContent = () => {
     switch (activeSection) {
       case 'dashboard':
-        return <DashboardOverview />;
+        return <DashboardOverview setActiveSection={setActiveSection} />;
       case 'workflow':
         return <WorkflowSteps />;
-      // case 'jobsearch':
-      //   return <JobSearchExample />;
+      case 'jobsearch':
+        return <JobSearchSection 
+          jobSearchQuery={jobSearchQuery}
+          setJobSearchQuery={setJobSearchQuery}
+          jobResults={jobResults}
+          isLoadingSearch={isLoadingJobSearch}
+          cvText={''}
+          handleSearchJobs={handleSearchJobs}
+          handleGenerateEmail={handleGenerateEmail}
+          isLoadingEmail={isLoadingEmail}
+          selectedJobForEmail={selectedJobForEmail}
+          generatedEmail={generatedEmail}
+          handleCloseModal={handleCloseModal}
+          handleCopyToClipboard={handleCopyToClipboard}
+          emailCopied={emailCopied}
+          handleSendEmail={handleSendEmail}
+          isEmailSending={isEmailSending}
+          emailSentMessage={emailSentMessage}
+        />;
       case 'applications':
         return <ApplicationTracker />;
       case 'automation':

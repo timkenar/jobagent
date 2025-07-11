@@ -189,7 +189,7 @@ const JobSearchSection: React.FC<JobSearchSectionProps> = ({
               aria-live="polite"
             >
               {isLoadingSearch ? <LoadingSpinner size={5} /> : <SearchIcon className="w-5 h-5 mr-2" />}
-              Regular Search
+              Run Job Search
             </button>
             {hasUploadedCV && handleSearchJobsWithCV && (
               <button
