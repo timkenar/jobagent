@@ -9,13 +9,14 @@ import { useAuth } from '../../src/contexts/AuthContext';
 const UserProfile: React.FC = () => {
   const navigate = useNavigate();
   const { currentSubscription, stats: subscriptionStats } = useSubscription();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [profileCompletion, setProfileCompletion] = useState<ReturnType<typeof getProfileCompletionItems> | null>(null);
   const [stats, setStats] = useState({
     emailsConnected: 0,
     jobApplications: 0,
     emailsGenerated: 0
   });
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (user && user.profile_completion_percentage !== undefined) {
@@ -29,18 +30,50 @@ const UserProfile: React.FC = () => {
     }
   }, [user]);
 
+  const handleRefreshProfile = async () => {
+    setRefreshing(true);
+    try {
+      await refreshUser();
+    } catch (error) {
+      console.error('Failed to refresh profile:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   if (!user) {
     return (
-      <div className="animate-pulse">
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center space-x-4 mb-6">
-            <div className="w-20 h-20 bg-gray-300 rounded-full"></div>
-            <div className="flex-1">
-              <div className="h-6 bg-gray-300 rounded mb-2"></div>
-              <div className="h-4 bg-gray-300 rounded w-2/3"></div>
-            </div>
+      <div className="space-y-6">
+        <div className="bg-white rounded-xl shadow-lg p-6 text-center">
+          <div className="w-20 h-20 bg-gray-200 rounded-full mx-auto mb-4 flex items-center justify-center">
+            <span className="text-gray-400 text-2xl">👤</span>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">No Profile Data Found</h2>
+          <p className="text-gray-600 mb-4">
+            We couldn't load your profile information. This might be because:
+          </p>
+          <ul className="text-left text-sm text-gray-500 mb-6 max-w-md mx-auto">
+            <li>• You haven't completed your profile setup</li>
+            <li>• Your session has expired</li>
+            <li>• There's a temporary connection issue</li>
+          </ul>
+          <div className="space-x-4">
+            <button
+              onClick={handleRefreshProfile}
+              disabled={refreshing}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              {refreshing ? 'Refreshing...' : 'Refresh Profile'}
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              Reload Page
+            </button>
           </div>
         </div>
+        
       </div>
     );
   }
@@ -50,49 +83,69 @@ const UserProfile: React.FC = () => {
       {/* Profile Header */}
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
         <div className="bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-8">
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              {user.profile_picture ? (
-                <img
-                  src={user.profile_picture}
-                  alt={user.fullName}
-                  className="w-20 h-20 rounded-full border-4 border-white shadow-lg"
-                />
-              ) : (
-                <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center border-4 border-white shadow-lg">
-                  <span className="text-white text-2xl font-bold">
-                    {(user.full_name || (user as any).fullName)?.[0]?.toUpperCase() || 'U'}
-                  </span>
-                </div>
-              )}
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-4 border-white rounded-full"></div>
-            </div>
-            <div className="text-white">
-              <h2 className="text-2xl font-bold">{user.full_name || (user as any).fullName}</h2>
-              <p className="text-blue-100">{user.email}</p>
-              <div className="mt-2 flex items-center space-x-2">
-                <span className="bg-white bg-opacity-20 px-2 py-1 rounded-full text-sm">
-                  {currentSubscription?.status === 'active' ? 
-                    `${currentSubscription.plan.name} User` : 
-                    'Free User'
-                  }
-                </span>
-                {user.signup_method && (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                {user.profile_picture ? (
+                  <img
+                    src={user.profile_picture}
+                    alt={user.fullName}
+                    className="w-20 h-20 rounded-full border-4 border-white shadow-lg"
+                  />
+                ) : (
+                  <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center border-4 border-white shadow-lg">
+                    <span className="text-white text-2xl font-bold">
+                      {(user.full_name || (user as any).fullName)?.[0]?.toUpperCase() || 'U'}
+                    </span>
+                  </div>
+                )}
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-4 border-white rounded-full"></div>
+              </div>
+              <div className="text-white">
+                <h2 className="text-2xl font-bold">{user.full_name || (user as any).fullName}</h2>
+                <p className="text-blue-100">{user.email}</p>
+                <div className="mt-2 flex items-center space-x-2">
                   <span className="bg-white bg-opacity-20 px-2 py-1 rounded-full text-sm">
-                    {user.signup_method_display || user.signup_method}
+                    {currentSubscription?.status === 'active' ? 
+                      `${currentSubscription.plan.name} User` : 
+                      'Free User'
+                    }
                   </span>
-                )}
-                {user.is_email_verified !== undefined && (
-                  <span className={`px-2 py-1 rounded-full text-sm ${
-                    user.is_email_verified 
-                      ? 'bg-green-500 bg-opacity-80' 
-                      : 'bg-orange-500 bg-opacity-80'
-                  }`}>
-                    {user.is_email_verified ? '✓ Verified' : '⚠ Unverified'}
-                  </span>
-                )}
+                  {user.signup_method && (
+                    <span className="bg-white bg-opacity-20 px-2 py-1 rounded-full text-sm">
+                      {user.signup_method_display || user.signup_method}
+                    </span>
+                  )}
+                  {user.is_email_verified !== undefined && (
+                    <span className={`px-2 py-1 rounded-full text-sm ${
+                      user.is_email_verified 
+                        ? 'bg-green-500 bg-opacity-80' 
+                        : 'bg-orange-500 bg-opacity-80'
+                    }`}>
+                      {user.is_email_verified ? '✓ Verified' : '⚠ Unverified'}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
+            
+            {/* Refresh Profile Button */}
+            <button
+              onClick={handleRefreshProfile}
+              disabled={refreshing}
+              className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center space-x-2 disabled:opacity-50"
+              title="Refresh profile data"
+            >
+              <svg 
+                className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              <span className="text-sm">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+            </button>
           </div>
         </div>
         

@@ -12,18 +12,33 @@ import {
 import { googleSearchService } from '../../src/services/googleSearchService';
 import { aiAgentService } from '../../src/services/aiAgentService';
 import { AccountCreation } from './AccountCreation';
+import { useAuth } from '../../src/contexts/AuthContext';
+import LogoSpinner from '../ui/logospinner';
 
 const JobSearchForm: React.FC<JobSearchFormProps> = ({ onComplete, onCancel }) => {
+  const { user } = useAuth();
+  
+  // Get user profile data for pre-filling
+  const getUserProfileData = () => {
+    try {
+      return JSON.parse(localStorage.getItem('userProfile') || '{}');
+    } catch {
+      return {};
+    }
+  };
+
+  const userProfile = getUserProfileData();
+  
   const [formData, setFormData] = useState<JobSearchConfig>({
-    keywords: '',
-    location: '',
+    keywords: userProfile.job_category || '',
+    location: userProfile.preferred_locations || '',
     jobType: 'full-time',
     salaryMin: '',
     salaryMax: '',
-    experienceLevel: '',
+    experienceLevel: userProfile.experience_years || '',
     enableAutoApplication: false,
     seleniumEnabled: true,
-    confirmationEmail: '',
+    confirmationEmail: user?.email || '',
     trackApplications: true,
     manualPromptMethod: 'email',
     maxApplicationsPerDay: '5',
@@ -455,8 +470,8 @@ const JobSearchForm: React.FC<JobSearchFormProps> = ({ onComplete, onCancel }) =
             >
               {isSearching ? (
                 <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  Searching...
+                  <LogoSpinner size={20} inline />
+                  <span className="ml-2">Searching...</span>
                 </div>
               ) : (
                 'Search Jobs'
@@ -470,8 +485,8 @@ const JobSearchForm: React.FC<JobSearchFormProps> = ({ onComplete, onCancel }) =
           >
             {isSubmitting ? (
               <div className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                Starting...
+                <LogoSpinner size={20} inline />
+                <span className="ml-2">Starting...</span>
               </div>
             ) : (
               formData.enableAutoApplication ? 'Start Auto Search' : 'Save Configuration'

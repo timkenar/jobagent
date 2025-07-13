@@ -3,6 +3,7 @@ import axios from 'axios';
 import { GmailEmailsList } from '../email';
 import { useGmail } from '../../src/contexts/GmailContext';
 import { API_CONFIG } from '../../src/config/api';
+import LogoSpinner from '../ui/logospinner';
 
 interface EmailAccount {
   id: number;
@@ -233,10 +234,10 @@ const EmailIntegrationSection: React.FC = () => {
 
       {/* Loading State */}
       {loading && (
-        <div className="mb-6 p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+        <div className="mb-6 p-6 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
           <div className="flex items-center justify-center space-x-3">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <div className="text-blue-700 font-medium">Loading email accounts...</div>
+            <LogoSpinner size={32} />
+            <div className="text-blue-700 dark:text-blue-300 font-medium">Loading email accounts...</div>
           </div>
           <div className="mt-3 bg-blue-200 rounded-full h-2">
             <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
@@ -360,8 +361,8 @@ const EmailIntegrationSection: React.FC = () => {
         
         {loading && gmail.emailAccounts.length === 0 ? (
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-            <span className="ml-2 text-gray-500">Loading accounts...</span>
+            <LogoSpinner size={24} />
+            <span className="ml-2 text-gray-500 dark:text-gray-400">Loading accounts...</span>
           </div>
         ) : gmail.emailAccounts.length === 0 ? (
           <div className="text-center py-6 sm:py-8 px-4">

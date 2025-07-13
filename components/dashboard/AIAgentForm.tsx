@@ -1,17 +1,32 @@
 import React, { useState } from 'react';
 import { useGmail } from '../../src/contexts/GmailContext';
+import { useAuth } from '../../src/contexts/AuthContext';
 import EmailIntegrationSection from '../email/EmailIntegrationSection';
 import { AIAgentFormProps, AIAgentConfig } from './types';
+import LogoSpinner from '../ui/logospinner';
 
 const AIAgentForm: React.FC<AIAgentFormProps> = ({ onComplete, onCancel }) => {
+  const { user } = useAuth();
+  const gmail = useGmail();
+  
+  // Generate default instructions based on user profile
+  const getDefaultInstructions = () => {
+    if (!user) return '';
+    
+    const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    const jobCategory = userProfile.job_category || 'professional';
+    const experience = userProfile.experience_years || 'mid-level';
+    
+    return `I am ${user.full_name || 'a professional'} seeking ${jobCategory} opportunities with ${experience} experience. Please help me find relevant job opportunities and craft personalized application emails that highlight my skills and experience.`;
+  };
+
   const [formData, setFormData] = useState<AIAgentConfig>({
-    chatModel: '',
-    enableMemory: false,
-    memoryContext: '',
-    instructions: ''
+    chatModel: 'gpt-4-turbo',
+    enableMemory: true,
+    memoryContext: user ? `User Profile: ${user.full_name}, Email: ${user.email}` : '',
+    instructions: getDefaultInstructions()
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const gmail = useGmail();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,8 +147,8 @@ const AIAgentForm: React.FC<AIAgentFormProps> = ({ onComplete, onCancel }) => {
           >
             {isSubmitting ? (
               <div className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                Saving...
+                <LogoSpinner size={20} inline />
+                <span className="ml-2">Saving...</span>
               </div>
             ) : (
               'Save Configuration'

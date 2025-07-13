@@ -4,8 +4,10 @@ import ProfileForm from './ProfileForm';           // Step 1: User profile setup
 import CVUploadForm from './CVUploadForm';         // Step 2: CV/Resume upload
 import AIAgentForm from './AIAgentForm';           // Step 3: AI agent configuration
 import JobSearchForm from './JobSearchForm';       // Step 4: Job search automation
+import { useAuth } from '../../src/contexts/AuthContext';
 
 const WorkflowUI = () => {
+  const { user } = useAuth();
   const [darkMode, setDarkMode] = useState(false);
   const [selectedNode, setSelectedNode] = useState(null);
   const [activeForm, setActiveForm] = useState(null);
@@ -31,9 +33,22 @@ const WorkflowUI = () => {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Update profile completion when user data changes
+  useEffect(() => {
+    if (user) {
+      const isComplete = !!(user.full_name && user.email && user.is_email_verified);
+      setProfileComplete(isComplete);
+    }
+  }, [user]);
   
-  // Workflow state - initialize from localStorage with error handling
+  // Workflow state - check profile completion from user context
   const [profileComplete, setProfileComplete] = useState(() => {
+    // Check if user has essential profile fields
+    if (user) {
+      return !!(user.full_name && user.email && user.is_email_verified);
+    }
+    // Fallback to localStorage for backward compatibility
     try {
       const stored = localStorage.getItem('userProfile');
       return stored && JSON.parse(stored).full_name ? true : false;
@@ -187,7 +202,13 @@ const WorkflowUI = () => {
         localStorage.setItem('userProfile', JSON.stringify(data));
         console.log('Profile data saved successfully');
       }
-      setProfileComplete(true);
+      // Update profile completion based on user context
+      if (user) {
+        const isComplete = !!(user.full_name && user.email && user.is_email_verified);
+        setProfileComplete(isComplete);
+      } else {
+        setProfileComplete(true);
+      }
       setActiveForm(null);
     } catch (error) {
       console.error('Error saving profile data:', error);
@@ -285,7 +306,7 @@ const WorkflowUI = () => {
                 </button>
               </div>
               <ProfileForm 
-                userProfile={(() => {
+                userProfile={user || (() => {
                   try {
                     return JSON.parse(localStorage.getItem('userProfile') || '{}');
                   } catch (error) {

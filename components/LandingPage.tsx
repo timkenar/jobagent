@@ -2,10 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import gsap from 'gsap';
 import { FaInstagram, FaWhatsapp } from 'react-icons/fa';
+import Image from 'next/image'; // Import Next.js Image component
 interface LandingPageProps {
   onGetStarted: () => void;
   onSignIn: () => void;
 }
+
+// If you have your own image in the assets folder, 
+// make sure the path in the <Image src="/assets/icon.svg" ... /> matches your image file.
+// For example, if your image is "my-logo.png", update as follows:
+// <Image src="/assets/my-logo.png" alt="AI Job Agent Logo" ... />
 
 const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onSignIn }) => {
   const [currentExample, setCurrentExample] = useState(0);
@@ -128,10 +134,16 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onSignIn }) => 
       <header className="relative z-10 bg-white/20 dark:bg-white/5 backdrop-blur-md border-b border-white/20 dark:border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-3 sm:py-4">
-            <div className="flex items-center space-x-2 sm:space-x-3">
-              <PaperAirplaneIcon className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 dark:text-blue-400 transition-transform duration-300 hover:scale-110" />
-              <span className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
-                AI Job Agent
+            <div className="flex items-center gap-0 sm:gap-0.5">
+              <Image
+              src="/assets/icon.svg"
+              alt="AI Job Agent Logo"
+              width={32}
+              height={32}
+              className="w-10 h-10 sm:w-10 sm:h-10"
+              priority
+              />
+              <span className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">AI Job Agent
               </span>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-4">
@@ -370,7 +382,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onSignIn }) => 
         </div>
       </section>
             {/* To change the color gradient in this section */}
-      <section ref={ctaRef} className="py-12 sm:py-20 bg-gradient-to-r from-blue-600 to-purple-600 relative z-10">
+      <section
+        ref={ctaRef}
+        className="py-12 sm:py-20 bg-gradient-to-r from-[#072144] via-[#072144] to-[#072144] relative z-10"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-2xl sm:text-4xl font-bold text-white mb-4 sm:mb-6">
@@ -402,12 +417,19 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onSignIn }) => 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             {/* Brand Section */}
             <div className="md:col-span-2">
-              <div className="flex items-center space-x-2 sm:space-x-3 mb-4">
-                <PaperAirplaneIcon className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 dark:text-blue-400 transition-transform duration-300 hover:scale-110" />
+                <div className="flex items-center space-x-2 sm:space-x-3 mb-4">
+                <Image
+                  src="/assets/icon.svg"
+                  alt="AI Job Agent Logo"
+                  width={32}
+                  height={32}
+                  className="w-6 h-6 sm:w-8 sm:h-8"
+                  priority
+                />
                 <span className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
                   AI Job Agent
                 </span>
-              </div>
+                </div>
               <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base mb-4 max-w-md">
                 Your Smart Career Companion - Revolutionizing job search with AI-powered automation, 
                 personalized recommendations, and intelligent application tracking.

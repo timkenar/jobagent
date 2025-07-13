@@ -22,6 +22,13 @@ export const API_ENDPOINTS = {
     RESEND_VERIFICATION: '/api/auth/resend-verification/',
   },
   
+  // User Profile
+  USER: {
+    PROFILE: '/api/user/profile/',
+    UPDATE_PROFILE: '/api/user/profile/',
+    PREFERENCES: '/api/user/preferences/',
+  },
+  
   // Automation
   AUTOMATION: {
     SEARCH_JOBS: '/api/automation/search-jobs/',

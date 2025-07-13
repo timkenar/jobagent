@@ -86,6 +86,7 @@ export const useJobSearch = (): JobSearchState & JobSearchActions => {
     }
   }, [authToken]);
 
+
   const refreshCVStatus = async () => {
     if (!authToken) return;
     try {
@@ -108,11 +109,18 @@ export const useJobSearch = (): JobSearchState & JobSearchActions => {
     else localStorage.removeItem('emailTemplate');
   }, [emailTemplate]);
 
-  const handleSignInSuccess = (token: string) => {
+  const handleSignInSuccess = async (token: string) => {
+    console.log('useJobSearch: handleSignInSuccess called with token');
     localStorage.setItem('authToken', token);
     setAuthToken(token);
     setIsSignedIn(true);
     setError(null);
+    
+    // Trigger a custom event to notify AuthContext
+    window.dispatchEvent(new CustomEvent('userLoggedIn', { detail: { token } }));
+    
+    // Refresh CV status after successful login
+    refreshCVStatus();
   };
 
   const handleSignOut = async () => {

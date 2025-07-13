@@ -180,7 +180,7 @@ const Settings: React.FC = () => {
 
 const Dashboard: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string>('dashboard');
-  const { getDisplayName, getEmail, getInitials } = useAuth();
+  const { user, loading, getDisplayName, getEmail, getInitials } = useAuth();
   
   // Job search state
   const [jobSearchQuery, setJobSearchQuery] = useState<string>('');

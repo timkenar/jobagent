@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User } from '../types/user';
+import { UserService } from '../services/userService';
 
 export const useUser = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -41,6 +42,19 @@ export const useUser = () => {
     localStorage.setItem('user', JSON.stringify(userData));
   };
 
+  const refreshUser = async () => {
+    const token = localStorage.getItem('authToken');
+    if (!token) return;
+
+    try {
+      const freshUserData = await UserService.fetchUserProfile();
+      setUser(freshUserData);
+      localStorage.setItem('user', JSON.stringify(freshUserData));
+    } catch (error) {
+      console.error('Failed to refresh user data:', error);
+    }
+  };
+
   // Helper functions for backward compatibility
   const getDisplayName = () => {
     if (!user) return 'User';
@@ -64,6 +78,7 @@ export const useUser = () => {
     user,
     loading,
     updateUser,
+    refreshUser,
     getDisplayName,
     getInitials,
     getEmail,

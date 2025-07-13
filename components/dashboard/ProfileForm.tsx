@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
 import { ProfileFormProps, ProfileFormData } from './types';
+import { useAuth } from '../../src/contexts/AuthContext';
+import { UserService } from '../../src/services/userService';
+import ProfileDataSummary from './ProfileDataSummary';
+import LogoSpinner from '../ui/logospinner';
 
 const ProfileForm: React.FC<ProfileFormProps> = ({ userProfile, onComplete, onCancel }) => {
+  const { user, updateUser } = useAuth();
+  
+  // Pre-populate form with user data from AuthContext or passed userProfile
   const [formData, setFormData] = useState<ProfileFormData>({
-    full_name: userProfile?.full_name || '',
-    email: userProfile?.email || '',
-    phone_number: userProfile?.phone_number || '',
-    skills: '',
-    experience_years: '',
-    job_category: '',
-    preferred_locations: ''
+    full_name: user?.full_name || userProfile?.full_name || '',
+    email: user?.email || userProfile?.email || '',
+    phone_number: user?.phone_number || userProfile?.phone_number || '',
+    skills: userProfile?.skills || '',
+    experience_years: userProfile?.experience_years || '',
+    job_category: userProfile?.job_category || '',
+    preferred_locations: userProfile?.preferred_locations || ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -19,13 +26,49 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ userProfile, onComplete, onCa
 
     try {
       const token = localStorage.getItem('authToken');
-      if (token) {
+      if (token && user) {
+        // Use the UserService to update profile via API
+        const profileData = {
+          full_name: formData.full_name,
+          phone_number: formData.phone_number,
+          // Additional profile fields can be added here as needed
+        };
+
+        try {
+          const updatedUser = await UserService.updateUserProfile(profileData);
+          // Update user in AuthContext with the response from backend
+          updateUser(updatedUser);
+        } catch (apiError) {
+          console.warn('API update failed, falling back to local update:', apiError);
+          // Fallback to local update if API fails
+          const updatedUser = { 
+            ...user, 
+            ...formData,
+            // Keep important backend fields intact
+            id: user.id,
+            signup_method: user.signup_method,
+            signup_method_display: user.signup_method_display,
+            profile_completion_percentage: user.profile_completion_percentage,
+            is_email_verified: user.is_email_verified,
+            registration_date: user.registration_date
+          };
+          updateUser(updatedUser);
+        }
+        
+        // Also save to userProfile for backward compatibility
+        localStorage.setItem('userProfile', JSON.stringify(formData));
+        
+        onComplete(formData);
+      } else {
+        // Fallback for legacy users without enhanced data
         const updatedUser = { ...userProfile, ...formData };
         localStorage.setItem('user', JSON.stringify(updatedUser));
-        onComplete();
+        localStorage.setItem('userProfile', JSON.stringify(formData));
+        onComplete(formData);
       }
     } catch (error) {
       console.error('Error updating profile:', error);
+      alert('Failed to save profile. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -40,45 +83,100 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ userProfile, onComplete, onCa
           </svg>
         </div>
         <h3 className="text-2xl font-bold text-gray-900 mb-2">Complete Your Profile</h3>
-        <p className="text-gray-600">Help us personalize your job search experience</p>
+        <p className="text-gray-600">
+          {user ? 'Update your profile information and add additional details' : 'Help us personalize your job search experience'}
+        </p>
+        {user && user.profile_completion_percentage !== undefined && (
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-blue-800">Profile Completion</span>
+              <span className="text-sm font-bold text-blue-600">{user.profile_completion_percentage}%</span>
+            </div>
+            <div className="w-full bg-blue-200 rounded-full h-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                style={{ width: `${user.profile_completion_percentage}%` }}
+              />
+            </div>
+          </div>
+        )}
       </div>
+      
+      {user && (
+        <div className="mb-6">
+          <ProfileDataSummary showDetails={false} />
+        </div>
+      )}
+      
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-2">
+            <label className="block text-sm font-semibold text-gray-800 mb-2 flex items-center">
               Full Name *
+              {user?.full_name && (
+                <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                  ✓ From Account
+                </span>
+              )}
             </label>
             <input
               type="text"
               value={formData.full_name}
               onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-              className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+              className={`w-full p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
+                user?.full_name 
+                  ? 'border-green-200 bg-green-50 focus:bg-white' 
+                  : 'border-gray-200 bg-gray-50 focus:bg-white'
+              }`}
               required
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-800 mb-2">
+            <label className="block text-sm font-semibold text-gray-800 mb-2 flex items-center">
               Email *
+              {user?.email && (
+                <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                  ✓ From Account
+                </span>
+              )}
+              {user?.is_email_verified && (
+                <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                  Verified
+                </span>
+              )}
             </label>
             <input
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-gray-50 focus:bg-white"
+              className={`w-full p-4 border rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 ${
+                user?.email 
+                  ? 'border-green-200 bg-green-50 focus:bg-white' 
+                  : 'border-gray-200 bg-gray-50 focus:bg-white'
+              }`}
               required
             />
           </div>
         </div>
         
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
             Phone Number
+            {user?.phone_number && (
+              <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                ✓ From Account
+              </span>
+            )}
           </label>
           <input
             type="tel"
             value={formData.phone_number}
             onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              user?.phone_number 
+                ? 'border-green-200 bg-green-50 focus:bg-white' 
+                : 'border-gray-300 bg-white'
+            }`}
           />
         </div>
 
@@ -154,8 +252,8 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ userProfile, onComplete, onCa
           >
             {isSubmitting ? (
               <div className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                Saving...
+                <LogoSpinner size={20} inline />
+                <span className="ml-2">Saving...</span>
               </div>
             ) : (
               'Save Profile'

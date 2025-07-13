@@ -13,7 +13,7 @@ import {
   OAuthCallback
 } from './components/auth';
 import { Dashboard } from './components/dashboard';
-import { LoadingSpinner, EnhancedChatbot } from './components/shared';
+import { LogoSpinner, EnhancedChatbot } from './components/shared';
 import Emails from './components/email/Email';
 import LandingPage from './components/LandingPage';
 import PlansPage from './components/subscriptions/pages/PlansPage';
@@ -41,7 +41,8 @@ const LandingPageWrapper = ({ onSignInSuccess }) => {
   return <LandingPage onGetStarted={handleGetStarted} onSignIn={handleSignIn} />;
 };
 
-const App = () => {
+// Inner component that uses hooks requiring AuthProvider
+const AppContent = () => {
   const {
     isBackendAvailable,
     isSignedIn,
@@ -57,7 +58,7 @@ const App = () => {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
         <div className="text-center">
-          <LoadingSpinner message="Connecting to server..." size={12} />
+          <LogoSpinner message="Connecting to server..." size={12} />
           <p className="mt-4 text-gray-600">Please wait while we establish connection...</p>
         </div>
       </div>
@@ -87,10 +88,8 @@ const App = () => {
   }
 
   return (
-    <ThemeProvider defaultTheme="system">
-      <AuthProvider>
-        <GmailProvider>
-          <SubscriptionProvider>
+    <GmailProvider>
+      <SubscriptionProvider>
           <Router>
           <Routes>
         {/* Email verification route - accessible without being signed in */}
@@ -214,10 +213,18 @@ const App = () => {
               <EnhancedChatbot />
             </>          )} /> 
         </Routes>
-        
       </Router>
-          </SubscriptionProvider>
-        </GmailProvider>
+      </SubscriptionProvider>
+    </GmailProvider>
+  );
+};
+
+// Main App component with providers
+const App = () => {
+  return (
+    <ThemeProvider defaultTheme="system">
+      <AuthProvider>
+        <AppContent />
       </AuthProvider>
     </ThemeProvider>
   );

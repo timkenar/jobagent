@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import axios from 'axios';
 import { API_CONFIG } from '../../src/config/api'; // Add this import
+import LogoSpinner from '../ui/logospinner';
 
 interface CVData {
   id: number;
@@ -397,10 +398,10 @@ const CVUploadSection: React.FC = () => {
 
       {/* Loading State */}
       {loading && (
-        <div className="mb-6 p-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+        <div className="mb-6 p-6 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
           <div className="flex items-center justify-center space-x-3">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-            <div className="text-purple-700 font-medium">Loading your CV data...</div>
+            <LogoSpinner size={32} />
+            <div className="text-purple-700 dark:text-purple-300 font-medium">Loading your CV data...</div>
           </div>
           <div className="mt-3 bg-purple-200 rounded-full h-2">
             <div className="bg-purple-600 h-2 rounded-full transition-all duration-300" 
