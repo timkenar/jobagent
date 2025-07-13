@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Sparkles, Search, User, Bot } from 'lucide-react';
+import { Send, Sparkles, Search, User, Bot, History, Menu, X, Clock, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../src/contexts/AuthContext';
 import { API_ENDPOINTS, apiCall } from '../../src/config/api';
 
@@ -8,6 +8,15 @@ interface Message {
   content: string;
   isUser: boolean;
   timestamp: Date;
+}
+
+interface ChatSession {
+  session_id: string;
+  created_at: string;
+  last_message_at: string;
+  is_active: boolean;
+  message_count?: number;
+  last_message?: string;
 }
 
 interface JobSearchSectionProps {
@@ -37,6 +46,9 @@ const JobSearchSection: React.FC<JobSearchSectionProps> = (props) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLDivElement>(null);
 
@@ -72,6 +84,75 @@ const JobSearchSection: React.FC<JobSearchSectionProps> = (props) => {
       setMessages([welcomeMessage]);
     }
   }, [isAuthenticated, user?.full_name, messages.length]);
+
+  // Load chat history
+  const loadChatHistory = async () => {
+    if (!isAuthenticated) return;
+
+    setIsLoadingHistory(true);
+    try {
+      const response = await apiCall(API_ENDPOINTS.CHATBOT.HISTORY);
+      setChatSessions(response.sessions || []);
+    } catch (error) {
+      console.error('Failed to load chat history:', error);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  // Load specific chat session
+  const loadSpecificSession = async (sessionId: string) => {
+    if (!isAuthenticated) return;
+
+    setIsTyping(true);
+    try {
+      const response = await apiCall(`${API_ENDPOINTS.CHATBOT.HISTORY}?session_id=${sessionId}`);
+      const sessionMessages = response.messages || [];
+      
+      // Convert backend messages to our Message format
+      const convertedMessages: Message[] = sessionMessages.map((msg: any, index: number) => ({
+        id: `${sessionId}-${index}`,
+        content: msg.content,
+        isUser: msg.role === 'user',
+        timestamp: new Date(msg.timestamp)
+      }));
+
+      setMessages(convertedMessages);
+      setCurrentSessionId(sessionId);
+      setShowHistory(false);
+    } catch (error) {
+      console.error('Failed to load session:', error);
+      setError('Failed to load chat session');
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  // Start new chat
+  const startNewChat = () => {
+    setMessages([]);
+    setCurrentSessionId(null);
+    setShowHistory(false);
+    setError(null);
+    
+    // Initialize with welcome message
+    const welcomeMessage: Message = {
+      id: 'welcome-new',
+      content: isAuthenticated 
+        ? `Welcome back${user?.full_name ? `, ${user.full_name}` : ''}! Ready for a new conversation? I'm here to help with your job search, CV optimization, and career advice.`
+        : `Hello! Starting a new conversation. Please log in for personalized assistance.`,
+      isUser: false,
+      timestamp: new Date()
+    };
+    setMessages([welcomeMessage]);
+  };
+
+  // Load history when component mounts
+  useEffect(() => {
+    if (isAuthenticated && !isLoadingHistory) {
+      loadChatHistory();
+    }
+  }, [isAuthenticated]);
 
   // Quick action buttons
   const quickActions = [
@@ -143,6 +224,11 @@ const JobSearchSection: React.FC<JobSearchSectionProps> = (props) => {
       
       setMessages(prev => [...prev, aiMessage]);
       
+      // Refresh chat history to show updated session
+      if (isAuthenticated) {
+        loadChatHistory();
+      }
+      
     } catch (error) {
       console.error('AI Response Error:', error);
       setError('Failed to get AI response. Please try again.');
@@ -158,6 +244,30 @@ const JobSearchSection: React.FC<JobSearchSectionProps> = (props) => {
     } finally {
       setIsTyping(false);
     }
+  };
+
+  // Function to render message with clickable links
+  const renderMessageContent = (content: string) => {
+    // Regular expression to detect URLs
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = content.split(urlRegex);
+
+    return parts.map((part, index) => {
+      if (urlRegex.test(part)) {
+        return (
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-400 hover:text-blue-300 underline break-all"
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
   };
 
   const handleSendMessage = async () => {
@@ -191,6 +301,149 @@ const JobSearchSection: React.FC<JobSearchSectionProps> = (props) => {
         isExpanded ? 'min-h-[600px]' : 'min-h-[200px]'
       }`}
     >
+      {/* History Side Panel - Mobile/Desktop */}
+      {showHistory && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 lg:hidden" onClick={() => setShowHistory(false)}>
+          <div 
+            className="fixed top-0 right-0 h-full w-80 bg-slate-900 shadow-xl transform transition-transform duration-300 ease-in-out border-l border-slate-700"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-slate-700 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <History className="w-5 h-5" />
+                Chat History
+              </h3>
+              <button 
+                onClick={() => setShowHistory(false)}
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 h-full">
+              {/* New Chat Button */}
+              <button
+                onClick={startNewChat}
+                className="w-full p-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg text-white font-medium flex items-center gap-2 transition-all"
+              >
+                <MessageSquare className="w-4 h-4" />
+                New Chat
+              </button>
+              
+              {/* Chat Sessions */}
+              {isLoadingHistory ? (
+                <div className="text-center py-4">
+                  <div className="animate-spin w-6 h-6 border-2 border-slate-400 border-t-transparent rounded-full mx-auto"></div>
+                  <p className="text-slate-400 text-sm mt-2">Loading history...</p>
+                </div>
+              ) : chatSessions.length > 0 ? (
+                chatSessions.map((session) => (
+                  <button
+                    key={session.session_id}
+                    onClick={() => loadSpecificSession(session.session_id)}
+                    className={`w-full p-3 text-left rounded-lg transition-all hover:bg-slate-700 border ${
+                      currentSessionId === session.session_id 
+                        ? 'bg-slate-700 border-blue-500' 
+                        : 'bg-slate-800 border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm font-medium truncate">
+                          {session.last_message || 'New conversation'}
+                        </p>
+                        <p className="text-slate-400 text-xs mt-1 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {new Date(session.last_message_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <span className="text-xs text-slate-500 bg-slate-700 px-2 py-1 rounded">
+                        {session.message_count || 0}
+                      </span>
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="text-center py-8 text-slate-400">
+                  <History className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No chat history yet</p>
+                  <p className="text-xs mt-1">Start a conversation to see it here</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Desktop History Panel */}
+      {showHistory && (
+        <div className="hidden lg:block fixed top-0 right-0 h-full w-80 bg-slate-900 shadow-xl z-40 border-l border-slate-700">
+          <div className="p-4 border-b border-slate-700 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <History className="w-5 h-5" />
+              Chat History
+            </h3>
+            <button 
+              onClick={() => setShowHistory(false)}
+              className="text-slate-400 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 space-y-3 h-full">
+            {/* New Chat Button */}
+            <button
+              onClick={startNewChat}
+              className="w-full p-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg text-white font-medium flex items-center gap-2 transition-all"
+            >
+              <MessageSquare className="w-4 h-4" />
+              New Chat
+            </button>
+            
+            {/* Chat Sessions */}
+            {isLoadingHistory ? (
+              <div className="text-center py-4">
+                <div className="animate-spin w-6 h-6 border-2 border-slate-400 border-t-transparent rounded-full mx-auto"></div>
+                <p className="text-slate-400 text-sm mt-2">Loading history...</p>
+              </div>
+            ) : chatSessions.length > 0 ? (
+              chatSessions.map((session) => (
+                <button
+                  key={session.session_id}
+                  onClick={() => loadSpecificSession(session.session_id)}
+                  className={`w-full p-3 text-left rounded-lg transition-all hover:bg-slate-700 border ${
+                    currentSessionId === session.session_id 
+                      ? 'bg-slate-700 border-blue-500' 
+                      : 'bg-slate-800 border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm font-medium truncate">
+                        {session.last_message || 'New conversation'}
+                      </p>
+                      <p className="text-slate-400 text-xs mt-1 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {new Date(session.last_message_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <span className="text-xs text-slate-500 bg-slate-700 px-2 py-1 rounded">
+                      {session.message_count || 0}
+                    </span>
+                  </div>
+                </button>
+              ))
+            ) : (
+              <div className="text-center py-8 text-slate-400">
+                <History className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No chat history yet</p>
+                <p className="text-xs mt-1">Start a conversation to see it here</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-2 tracking-tight">
@@ -221,6 +474,18 @@ const JobSearchSection: React.FC<JobSearchSectionProps> = (props) => {
               <span className="text-yellow-400 font-medium">Please log in</span>
             </div>
           )}
+          
+          {/* History Button */}
+          {isAuthenticated && (
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className="text-slate-400 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-700"
+              title="Chat History"
+            >
+              <History className="w-5 h-5" />
+            </button>
+          )}
+          
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="text-slate-400 hover:text-white transition-colors"
@@ -269,7 +534,7 @@ const JobSearchSection: React.FC<JobSearchSectionProps> = (props) => {
                     }`}
                   >
                     <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                      {message.content}
+                      {renderMessageContent(message.content)}
                     </div>
                     <div className="text-xs opacity-70 mt-2">
                       {message.timestamp.toLocaleTimeString([], { 
