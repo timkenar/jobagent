@@ -5,6 +5,7 @@ import DashboardOverview from './DashboardOverview';
 import { UserProfile } from '../profile';
 import { JobApplicationDashboard, ApplicationTracker } from '../jobs';
 import { useJobSearch } from '../../src/hooks/useJobSearch';
+import { useAuth } from '../../src/contexts/AuthContext';
 import EnhancedChatbot from '../../components/shared/EnhancedChatbot';
 import { EmailManagement } from '../email';
 import { AutomationDashboard } from '../automation';
@@ -179,6 +180,7 @@ const Settings: React.FC = () => {
 
 const Dashboard: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string>('dashboard');
+  const { getDisplayName, getEmail, getInitials } = useAuth();
   
   // Job search state
   const [jobSearchQuery, setJobSearchQuery] = useState<string>('');
@@ -375,15 +377,15 @@ const Dashboard: React.FC = () => {
                 <NotificationBell />
                 <div className="text-right">
                   <div className="text-sm font-medium text-gray-900 dark:text-white">
-                    {JSON.parse(localStorage.getItem('user') || '{}').full_name || 'User'}
+                    {getDisplayName()}
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {JSON.parse(localStorage.getItem('user') || '{}').email || ''}
+                    {getEmail()}
                   </div>
                 </div>
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                   <span className="text-white text-sm font-medium">
-                    {(JSON.parse(localStorage.getItem('user') || '{}').full_name || 'U')[0].toUpperCase()}
+                    {getInitials()}
                   </span>
                 </div>
               </div>

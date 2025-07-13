@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import MobileHeader from './MobileHeader';
 import BottomNavigation from './BottomNavigation';
+import { useTheme } from '../../src/contexts/ThemeContext';
 
 interface ResponsiveLayoutProps {
   children: React.ReactNode;
@@ -21,6 +22,7 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const { toggleTheme, isDark } = useTheme();
 
   // Check if device is mobile
   useEffect(() => {
@@ -57,6 +59,8 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
         <MobileHeader
           activeSection={activeSection}
           onMenuClick={() => setSidebarOpen(true)}
+          onThemeToggle={toggleTheme}
+          darkMode={isDark}
         />
       )}
 

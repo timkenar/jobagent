@@ -4,6 +4,7 @@ import { useJobSearch } from './src/hooks/useJobSearch';
 import { useSessionManager } from './src/hooks/useSessionManager';
 import { GmailProvider } from './src/contexts/GmailContext';
 import { ThemeProvider } from './src/contexts/ThemeContext';
+import { AuthProvider } from './src/contexts/AuthContext';
 import { SubscriptionProvider } from './components/subscriptions/context/SubscriptionContext';
 import {
   SignUpPage,
@@ -87,8 +88,9 @@ const App = () => {
 
   return (
     <ThemeProvider defaultTheme="system">
-      <GmailProvider>
-        <SubscriptionProvider>
+      <AuthProvider>
+        <GmailProvider>
+          <SubscriptionProvider>
           <Router>
           <Routes>
         {/* Email verification route - accessible without being signed in */}
@@ -214,8 +216,9 @@ const App = () => {
         </Routes>
         
       </Router>
-        </SubscriptionProvider>
-      </GmailProvider>
+          </SubscriptionProvider>
+        </GmailProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 };

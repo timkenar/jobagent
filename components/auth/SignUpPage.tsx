@@ -14,7 +14,18 @@ interface AuthResponse {
   success: boolean;
   token?: string;
   message?: string;
-  user?: { id: string; email: string; fullName: string };
+  user?: {
+    id: number;
+    email: string;
+    full_name: string;
+    signup_method: 'email' | 'google';
+    signup_method_display: string;
+    profile_completion_percentage: number;
+    is_email_verified: boolean;
+    phone_number?: string;
+    profile_picture?: string;
+    registration_date: string;
+  };
   email_verification_required?: boolean;
   email?: string;
 }

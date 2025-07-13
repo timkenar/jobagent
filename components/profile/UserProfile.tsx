@@ -3,18 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { CVUploadSection } from '../cv';
 import { JobRecommendations } from '../jobs';
 import { useSubscription } from '../subscriptions/context/SubscriptionContext';
-
-interface User {
-  id: string;
-  email: string;
-  fullName: string;
-  profile_picture?: string;
-}
+import { User, convertToLegacyUser, getProfileCompletionItems } from '../../src/types/user';
+import { useAuth } from '../../src/contexts/AuthContext';
 
 const UserProfile: React.FC = () => {
   const navigate = useNavigate();
   const { currentSubscription, stats: subscriptionStats } = useSubscription();
-  const [user, setUser] = useState<User | null>(null);
+  const { user } = useAuth();
+  const [profileCompletion, setProfileCompletion] = useState<ReturnType<typeof getProfileCompletionItems> | null>(null);
   const [stats, setStats] = useState({
     emailsConnected: 0,
     jobApplications: 0,
@@ -22,9 +18,8 @@ const UserProfile: React.FC = () => {
   });
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      setUser(JSON.parse(userData));
+    if (user && user.profile_completion_percentage !== undefined) {
+      setProfileCompletion(getProfileCompletionItems(user));
     }
     
     // Load stats from localStorage or API
@@ -32,7 +27,7 @@ const UserProfile: React.FC = () => {
     if (savedStats) {
       setStats(JSON.parse(savedStats));
     }
-  }, []);
+  }, [user]);
 
   if (!user) {
     return (
@@ -66,14 +61,14 @@ const UserProfile: React.FC = () => {
               ) : (
                 <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center border-4 border-white shadow-lg">
                   <span className="text-white text-2xl font-bold">
-                    {user.fullName ? user.fullName[0].toUpperCase() : 'U'}
+                    {(user.full_name || (user as any).fullName)?.[0]?.toUpperCase() || 'U'}
                   </span>
                 </div>
               )}
               <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 border-4 border-white rounded-full"></div>
             </div>
             <div className="text-white">
-              <h2 className="text-2xl font-bold">{user.fullName}</h2>
+              <h2 className="text-2xl font-bold">{user.full_name || (user as any).fullName}</h2>
               <p className="text-blue-100">{user.email}</p>
               <div className="mt-2 flex items-center space-x-2">
                 <span className="bg-white bg-opacity-20 px-2 py-1 rounded-full text-sm">
@@ -82,12 +77,59 @@ const UserProfile: React.FC = () => {
                     'Free User'
                   }
                 </span>
+                {user.signup_method && (
+                  <span className="bg-white bg-opacity-20 px-2 py-1 rounded-full text-sm">
+                    {user.signup_method_display || user.signup_method}
+                  </span>
+                )}
+                {user.is_email_verified !== undefined && (
+                  <span className={`px-2 py-1 rounded-full text-sm ${
+                    user.is_email_verified 
+                      ? 'bg-green-500 bg-opacity-80' 
+                      : 'bg-orange-500 bg-opacity-80'
+                  }`}>
+                    {user.is_email_verified ? '✓ Verified' : '⚠ Unverified'}
+                  </span>
+                )}
               </div>
             </div>
           </div>
         </div>
         
         <div className="p-6">
+          {/* Profile Completion Section */}
+          {profileCompletion && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Profile Completion</h3>
+                <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {user.profile_completion_percentage}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-3">
+                <div 
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 h-2 rounded-full transition-all duration-300" 
+                  style={{ width: `${user.profile_completion_percentage}%` }}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                {profileCompletion.items.map((item) => (
+                  <div key={item.name} className={`flex items-center space-x-2 ${
+                    item.completed ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'
+                  }`}>
+                    <span className="text-xs">
+                      {item.completed ? '✓' : item.required ? '✗' : '○'}
+                    </span>
+                    <span>{item.name}</span>
+                    {item.required && !item.completed && (
+                      <span className="text-red-500 text-xs">(Required)</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <div className="text-2xl font-bold text-blue-600">

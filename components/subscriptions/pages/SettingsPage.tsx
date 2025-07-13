@@ -13,9 +13,12 @@ import {
   Eye,
   EyeOff,
   Trash2,
-  Edit3
+  Edit3,
+  Palette
 } from 'lucide-react';
 import { useSubscription } from '../context/SubscriptionContext';
+import ThemeToggle from '../../shared/ThemeToggle';
+import { useTheme } from '../../../src/contexts/ThemeContext';
 
 interface NotificationSettings {
   email_notifications: boolean;
@@ -35,8 +38,9 @@ interface PaymentMethod {
 
 const SettingsPage: React.FC = () => {
   const { currentSubscription, loading, error } = useSubscription();
+  const { theme } = useTheme();
   
-  const [activeTab, setActiveTab] = useState<'notifications' | 'payment' | 'privacy' | 'account'>('notifications');
+  const [activeTab, setActiveTab] = useState<'notifications' | 'payment' | 'privacy' | 'account' | 'appearance'>('notifications');
   const [saving, setSaving] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -97,13 +101,14 @@ const SettingsPage: React.FC = () => {
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'payment', label: 'Payment Methods', icon: CreditCard },
     { id: 'privacy', label: 'Privacy', icon: Shield },
-    { id: 'account', label: 'Account', icon: Settings }
+    { id: 'account', label: 'Account', icon: Settings },
+    { id: 'appearance', label: 'Appearance', icon: Palette }
   ];
 
   const renderNotificationSettings = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Email Notifications</h3>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Email Notifications</h3>
         <div className="space-y-4">
           {Object.entries(notifications).map(([key, value]) => (
             <div key={key} className="flex items-center justify-between">
@@ -140,7 +145,7 @@ const SettingsPage: React.FC = () => {
   const renderPaymentMethods = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium text-gray-900">Payment Methods</h3>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Payment Methods</h3>
         <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
           Add New Method
         </button>
@@ -196,7 +201,7 @@ const SettingsPage: React.FC = () => {
   const renderPrivacySettings = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Privacy Preferences</h3>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Privacy Preferences</h3>
         <div className="space-y-4">
           {Object.entries(privacySettings).map(([key, value]) => (
             <div key={key} className="flex items-center justify-between">
@@ -232,7 +237,7 @@ const SettingsPage: React.FC = () => {
   const renderAccountSettings = () => (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Account Management</h3>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Account Management</h3>
         <div className="space-y-4">
           <div className="border border-gray-200 rounded-lg p-4">
             <h4 className="font-medium text-gray-900 mb-2">Export Data</h4>
@@ -258,10 +263,37 @@ const SettingsPage: React.FC = () => {
     </div>
   );
 
+  const renderAppearanceSettings = () => (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Appearance Settings</h3>
+        <div className="space-y-6">
+          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+            <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Theme</h4>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              Choose your preferred color theme. By default, the theme follows your system settings.
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block mb-2">
+                  Theme Mode
+                </label>
+                <ThemeToggle variant="dropdown" showLabel={true} size="md" />
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                Current theme: <span className="font-medium capitalize">{theme}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -272,8 +304,8 @@ const SettingsPage: React.FC = () => {
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Subscription Settings</h1>
-                <p className="text-gray-600">Manage your subscription preferences and account settings</p>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Subscription Settings</h1>
+                <p className="text-gray-600 dark:text-gray-400">Manage your subscription preferences and account settings</p>
               </div>
             </div>
             <div className="flex items-center space-x-2">
@@ -309,7 +341,7 @@ const SettingsPage: React.FC = () => {
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar */}
           <div className="lg:w-64 flex-shrink-0">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 transition-colors duration-200">
               <nav className="space-y-2">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
@@ -334,11 +366,12 @@ const SettingsPage: React.FC = () => {
 
           {/* Main Content */}
           <div className="flex-1">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-200">
               {activeTab === 'notifications' && renderNotificationSettings()}
               {activeTab === 'payment' && renderPaymentMethods()}
               {activeTab === 'privacy' && renderPrivacySettings()}
               {activeTab === 'account' && renderAccountSettings()}
+              {activeTab === 'appearance' && renderAppearanceSettings()}
             </div>
           </div>
         </div>
