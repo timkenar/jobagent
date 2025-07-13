@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Send, Sparkles, Search, User, Bot } from 'lucide-react';
-import { JobSearchSection } from '.';
+import { useAuth } from '../../src/contexts/AuthContext';
+import { API_ENDPOINTS, apiCall } from '../../src/config/api';
 
 interface Message {
   id: string;
@@ -9,25 +10,33 @@ interface Message {
   timestamp: Date;
 }
 
-interface JobSearchChatProps {
-  hasUploadedCV?: boolean;
-  cvInfo?: any;
+interface JobSearchSectionProps {
+  jobSearchQuery?: string;
+  setJobSearchQuery?: (query: string) => void;
   jobResults?: any[];
-  onJobSearch?: (query: string) => void;
-  onEmailGeneration?: (job: any) => void;
+  isLoadingSearch?: boolean;
+  cvText?: string;
+  handleSearchJobs?: () => void;
+  handleGenerateEmail?: (job: any) => void;
+  isLoadingEmail?: boolean;
+  selectedJobForEmail?: any;
+  generatedEmail?: any;
+  handleCloseModal?: () => void;
+  handleCopyToClipboard?: () => void;
+  emailCopied?: boolean;
+  handleSendEmail?: (recipientEmail: string, subject: string, body: string) => void;
+  isEmailSending?: boolean;
+  emailSentMessage?: string | null;
 }
 
-const JobSearchChat: React.FC<JobSearchChatProps> = ({
-  hasUploadedCV,
-  cvInfo,
-  jobResults,
-  onJobSearch,
-  onEmailGeneration
-}) => {
+const JobSearchSection: React.FC<JobSearchSectionProps> = (props) => {
+  const { user, isAuthenticated } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLDivElement>(null);
 
@@ -48,6 +57,21 @@ const JobSearchChat: React.FC<JobSearchChatProps> = ({
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Initialize with welcome message
+  useEffect(() => {
+    if (messages.length === 0) {
+      const welcomeMessage: Message = {
+        id: 'welcome',
+        content: isAuthenticated 
+          ? `Welcome back${user?.full_name ? `, ${user.full_name}` : ''}! I'm your AI job search assistant with access to your profile. I can help you with personalized job searching, CV optimization, interview preparation, and career advice. What would you like to work on today?`
+          : `Hello! I'm your AI job search assistant. To provide you with personalized advice based on your CV and experience, please log in to your account. I can help with job searching, CV optimization, interview prep, and career guidance!`,
+        isUser: false,
+        timestamp: new Date()
+      };
+      setMessages([welcomeMessage]);
+    }
+  }, [isAuthenticated, user?.full_name, messages.length]);
 
   // Quick action buttons
   const quickActions = [
@@ -73,58 +97,67 @@ const JobSearchChat: React.FC<JobSearchChatProps> = ({
     }
   ];
 
-  // Simulate AI response with context from your job search engine
+  // Real AI response using our enhanced backend
   const generateAIResponse = async (userMessage: string) => {
-    setIsTyping(true);
-    
-    // Simulate typing delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    let response = "";
-    
-    if (userMessage.toLowerCase().includes("find job") || userMessage.toLowerCase().includes("job opportunities")) {
-      if (hasUploadedCV && cvInfo) {
-        response = `Great! I can see you have a CV uploaded with ${cvInfo.skills?.length || 0} skills${cvInfo.job_category ? ` in ${cvInfo.job_category}` : ''}. 
-
-Based on your profile, I can help you:
-• Search for jobs matching your skills
-• Generate personalized application emails
-• Find roles in your preferred category
-
-${jobResults && jobResults.length > 0 ? `I see you already have ${jobResults.length} job results. Would you like me to help you prioritize them or search for more specific roles?` : 'Would you like me to run a job search now?'}`;
-      } else {
-        response = "I'd love to help you find jobs! I notice you haven't uploaded a CV yet. To give you the best results, I recommend:\n\n• Upload your CV first for personalized matches\n• Or tell me about your skills and experience\n• Specify your preferred job type and location\n\nOnce I have this info, I can search for relevant positions and help craft application emails!";
-      }
-    } else if (userMessage.toLowerCase().includes("cv") || userMessage.toLowerCase().includes("resume")) {
-      response = hasUploadedCV 
-        ? `I can see your CV is uploaded! Here's how to optimize it further:\n\n• **Tailor keywords** - Match job descriptions you're interested in\n• **Highlight achievements** - Use metrics where possible\n• **Update skills** - Add any new technologies or certifications\n• **Customize per application** - Adjust focus based on role requirements\n\nWould you like me to analyze specific job postings against your current CV?`
-        : "Great question! Here are key CV optimization tips:\n\n• **Upload your CV** - So I can give personalized advice\n• **Use keywords** - Match terms from job descriptions\n• **Quantify results** - Include numbers and achievements\n• **Keep it focused** - 1-2 pages, relevant content only\n• **Update regularly** - Add new skills and experience\n\nOnce you upload your CV, I can provide specific improvement suggestions!";
-    } else if (userMessage.toLowerCase().includes("interview")) {
-      response = "I'll help you prepare for interviews! Here's my approach:\n\n• **Practice common questions** - 'Tell me about yourself', strengths/weaknesses\n• **Use STAR method** - Situation, Task, Action, Result\n• **Research the company** - Know their values and recent news\n• **Prepare questions** - Show genuine interest\n• **Mock interviews** - Practice with real scenarios\n\nIf you have specific job applications in progress, I can help you prepare for those specific roles!";
-    } else if (userMessage.toLowerCase().includes("career") || userMessage.toLowerCase().includes("path")) {
-      const careerContext = hasUploadedCV && cvInfo?.job_category 
-        ? `I see you're focused on ${cvInfo.job_category}. ` 
-        : '';
-      
-      response = `${careerContext}Career planning is crucial! Let me help you:\n\n• **Assess your current skills** - What you're good at now\n• **Identify growth areas** - Skills to develop\n• **Explore opportunities** - Different career paths\n• **Set goals** - Short and long-term objectives\n• **Create action plans** - Steps to reach your goals\n\nWhat specific aspect of your career would you like to focus on?`;
-    } else {
-      const contextInfo = hasUploadedCV 
-        ? `I can see your CV is uploaded with ${cvInfo?.skills?.length || 0} skills. `
-        : '';
-      
-      response = `${contextInfo}I'm here to help with your entire job search journey! I can assist with:\n\n• **Job searching** - Find relevant opportunities\n• **CV optimization** - Improve your resume\n• **Email generation** - Craft compelling applications\n• **Interview prep** - Practice and tips\n• **Career planning** - Long-term strategy\n\nWhat would you like to work on today?`;
+    if (!isAuthenticated) {
+      const aiMessage: Message = {
+        id: Date.now().toString(),
+        content: "Please log in to access personalized AI assistance. Once logged in, I'll have access to your profile and can provide tailored job search advice!",
+        isUser: false,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, aiMessage]);
+      return;
     }
+
+    setIsTyping(true);
+    setError(null);
     
-    setIsTyping(false);
-    
-    const aiMessage: Message = {
-      id: Date.now().toString(),
-      content: response,
-      isUser: false,
-      timestamp: new Date()
-    };
-    
-    setMessages(prev => [...prev, aiMessage]);
+    try {
+      const requestBody: any = { question: userMessage };
+      
+      if (currentSessionId) {
+        requestBody.session_id = currentSessionId;
+      }
+
+      const response = await apiCall(API_ENDPOINTS.CHATBOT.ASK, {
+        method: 'POST',
+        body: JSON.stringify(requestBody),
+      });
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      
+      // Update current session ID if provided
+      if (response.session_id && !currentSessionId) {
+        setCurrentSessionId(response.session_id);
+      }
+      
+      const aiMessage: Message = {
+        id: Date.now().toString(),
+        content: response.answer || 'Sorry, I couldn\'t generate a response.',
+        isUser: false,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, aiMessage]);
+      
+    } catch (error) {
+      console.error('AI Response Error:', error);
+      setError('Failed to get AI response. Please try again.');
+      
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        content: 'Sorry, I encountered an error. Please try again in a moment.',
+        isUser: false,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const handleSendMessage = async () => {
@@ -150,12 +183,6 @@ ${jobResults && jobResults.length > 0 ? `I see you already have ${jobResults.len
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
 
   return (
     <section 
@@ -175,10 +202,23 @@ ${jobResults && jobResults.length > 0 ? `I see you already have ${jobResults.len
           Job Search Assistant
         </h2>
         <div className="flex items-center space-x-2">
-          {hasUploadedCV && cvInfo && (
+          {isAuthenticated ? (
+            <div className="flex items-center space-x-3 text-sm">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-green-400 font-medium">Logged in as {user?.full_name || 'User'}</span>
+              </div>
+              {user && (
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <span className="text-blue-400 font-medium">Profile Active</span>
+                </div>
+              )}
+            </div>
+          ) : (
             <div className="flex items-center space-x-2 text-sm">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-green-400 font-medium">CV Ready</span>
+              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+              <span className="text-yellow-400 font-medium">Please log in</span>
             </div>
           )}
           <button
@@ -204,10 +244,13 @@ ${jobResults && jobResults.length > 0 ? `I see you already have ${jobResults.len
             <div className="flex flex-col items-center justify-center h-full space-y-6">
               <div className="text-center">
                 <h3 className="text-2xl font-light text-white mb-2">
-                  {getGreeting()}, job seeker
+                  {getGreeting()}, {isAuthenticated ? user?.full_name || 'there' : 'job seeker'}
                 </h3>
                 <p className="text-slate-400">
-                  How can I help you with your career journey today?
+                  {isAuthenticated 
+                    ? "I have access to your profile and can provide personalized advice!"
+                    : "Please log in for personalized job search assistance."
+                  }
                 </p>
               </div>
             </div>
@@ -274,21 +317,34 @@ ${jobResults && jobResults.length > 0 ? `I see you already have ${jobResults.len
         ))}
       </div>
 
+      {/* Error Display */}
+      {error && (
+        <div className="mb-4 p-3 bg-red-900/50 border border-red-700 rounded-lg">
+          <p className="text-red-300 text-sm">{error}</p>
+        </div>
+      )}
+
       {/* Input Area */}
       <div className="relative">
         <textarea
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
-          onKeyPress={handleKeyPress}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleSendMessage();
+            }
+          }}
           onFocus={() => !isExpanded && setIsExpanded(true)}
-          placeholder="Ask me anything about your job search..."
+          placeholder={isAuthenticated ? "Ask me anything about your job search..." : "Please log in to access AI assistance..."}
           className="w-full p-4 pr-12 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 resize-none"
+          disabled={!isAuthenticated}
           rows={1}
           style={{ minHeight: '50px' }}
         />
         <button
           onClick={handleSendMessage}
-          disabled={!inputMessage.trim() || isTyping}
+          disabled={!inputMessage.trim() || isTyping || !isAuthenticated}
           className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 bg-sky-600 hover:bg-sky-700 disabled:bg-slate-600 disabled:cursor-not-allowed rounded-lg transition-colors"
         >
           <Send className="w-4 h-4 text-white" />
@@ -298,4 +354,4 @@ ${jobResults && jobResults.length > 0 ? `I see you already have ${jobResults.len
   );
 };
 
-export default JobSearchChat;
+export default JobSearchSection;

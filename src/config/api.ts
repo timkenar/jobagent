@@ -68,6 +68,7 @@ export const API_ENDPOINTS = {
   // Chatbot
   CHATBOT: {
     ASK: '/api/chatbot/ask/',
+    HISTORY: '/api/chatbot/history/',
   },
   
   // Notifications

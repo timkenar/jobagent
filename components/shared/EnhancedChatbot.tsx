@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useGmail } from '../../src/contexts/GmailContext';
+import { useAuth } from '../../src/contexts/AuthContext';
 import gmailService from '../../src/services/gmailService';
-import { API_CONFIG } from '../../src/config/api';
+import { API_ENDPOINTS, apiCall } from '../../src/config/api';
 
 interface Message {
   id: number;
@@ -14,8 +15,18 @@ interface Message {
   analysis?: any;
 }
 
+interface ChatSession {
+  session_id: string;
+  created_at: string;
+  last_message_at: string;
+  is_active: boolean;
+  message_count?: number;
+  last_message?: string;
+}
+
 const EnhancedChatbot: React.FC = () => {
   const gmail = useGmail();
+  const { user, isAuthenticated } = useAuth();
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([
     { 
@@ -29,6 +40,9 @@ const EnhancedChatbot: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [hasNewMessage, setHasNewMessage] = useState(false);
   const [messageIdCounter, setMessageIdCounter] = useState(2);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -108,26 +122,36 @@ const EnhancedChatbot: React.FC = () => {
   };
 
   const sendChatbotMessage = async (question: string) => {
+    if (!isAuthenticated) {
+      throw new Error('You must be logged in to use the AI assistant');
+    }
+
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}/api/chatbot/ask/`, {
+      const requestBody: any = { question };
+      
+      if (currentSessionId) {
+        requestBody.session_id = currentSessionId;
+      }
+
+      const response = await apiCall(API_ENDPOINTS.CHATBOT.ASK, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ question }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
-      
-      if (data.error) {
-        throw new Error(data.error);
+      if (response.error) {
+        throw new Error(response.error);
       }
       
-      return data.answer || 'Sorry, I couldn\'t generate a response.';
+      // Update current session ID if provided
+      if (response.session_id && !currentSessionId) {
+        setCurrentSessionId(response.session_id);
+      }
+      
+      return response.answer || 'Sorry, I couldn\'t generate a response.';
     } catch (error) {
       console.error('Chatbot Error:', error);
       throw error;
@@ -251,7 +275,7 @@ const EnhancedChatbot: React.FC = () => {
               const analysis = {
                 totalEmails: analysisEmails.length,
                 companiesContacted: new Set(analysisEmails.map(e => e.sender.split('@')[1])).size,
-                mostActiveCompany: analysisEmails.reduce((acc, email) => {
+                mostActiveCompany: analysisEmails.reduce((acc: Record<string, number>, email: any) => {
                   const domain = email.sender.split('@')[1];
                   acc[domain] = (acc[domain] || 0) + 1;
                   return acc;
@@ -296,7 +320,21 @@ const EnhancedChatbot: React.FC = () => {
           setMessageIdCounter(prev => prev + 2);
         }
       } else {
-        // Regular chatbot response
+        // Check if user is authenticated for AI assistant
+        if (!isAuthenticated) {
+          const botMsg: Message = {
+            id: messageIdCounter + 1,
+            role: 'bot',
+            text: 'Please log in to use the AI assistant. The AI can provide personalized job search advice based on your profile!',
+            timestamp: new Date(),
+            type: 'text'
+          };
+          setMessages(prev => [...prev, botMsg]);
+          setMessageIdCounter(prev => prev + 2);
+          return;
+        }
+
+        // Regular chatbot response with user context
         const answer = await sendChatbotMessage(currentInput);
         const botMsg: Message = {
           id: messageIdCounter + 1,
@@ -323,22 +361,69 @@ const EnhancedChatbot: React.FC = () => {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+
+  const loadChatHistory = async () => {
+    if (!isAuthenticated) return;
+
+    try {
+      const response = await apiCall(API_ENDPOINTS.CHATBOT.HISTORY);
+      setChatSessions(response.sessions || []);
+    } catch (error) {
+      console.error('Failed to load chat history:', error);
     }
   };
 
-  const clearChat = () => {
+  const loadSpecificSession = async (sessionId: string) => {
+    if (!isAuthenticated) return;
+
+    try {
+      const response = await apiCall(`${API_ENDPOINTS.CHATBOT.HISTORY}?session_id=${sessionId}`);
+      const sessionMessages = response.messages || [];
+      
+      // Convert backend messages to our Message format
+      const convertedMessages: Message[] = sessionMessages.map((msg: any, index: number) => ({
+        id: index + 1,
+        role: msg.role === 'assistant' ? 'bot' : 'user',
+        text: msg.content,
+        timestamp: new Date(msg.timestamp),
+        type: 'text'
+      }));
+
+      setMessages(convertedMessages);
+      setCurrentSessionId(sessionId);
+      setMessageIdCounter(convertedMessages.length + 1);
+      setShowHistory(false);
+    } catch (error) {
+      console.error('Failed to load session:', error);
+    }
+  };
+
+  const startNewChat = () => {
+    const welcomeMessage = isAuthenticated 
+      ? `Hi ${user?.full_name || 'there'}! I'm your AI assistant with access to your profile. I can help you with job searching, career advice, email management, and more! I can see you have uploaded your CV and can provide personalized advice.`
+      : 'Hi! I\'m your AI assistant. Please log in to get personalized job search advice based on your profile!';
+      
     setMessages([{
       id: 1,
       role: 'bot',
-      text: 'Chat cleared! How can I help you today?',
+      text: welcomeMessage,
       timestamp: new Date()
     }]);
     setMessageIdCounter(2);
+    setCurrentSessionId(null);
+    setShowHistory(false);
   };
+
+  const clearChat = () => {
+    startNewChat();
+  };
+
+  // Load chat history when component mounts or user changes
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadChatHistory();
+    }
+  }, [isAuthenticated]);
 
   const formatDate = (date: Date) => {
     return date.toLocaleTimeString('en-US', { 
@@ -426,7 +511,7 @@ const EnhancedChatbot: React.FC = () => {
                   {Object.entries(message.analysis.mostActiveCompany)
                     .sort(([,a], [,b]) => (b as number) - (a as number))
                     .slice(0, 3)
-                    .map(([company, count]) => (
+                    .map(([company, count]: [string, unknown]) => (
                       <div key={company} className="flex justify-between text-xs">
                         <span className="text-gray-700">{company}</span>
                         <span className="font-medium text-blue-600">{count} emails</span>
@@ -482,13 +567,24 @@ const EnhancedChatbot: React.FC = () => {
               </div>
             </div>
             <div className="flex items-center space-x-2">
+              {isAuthenticated && (
+                <button 
+                  onClick={() => setShowHistory(!showHistory)}
+                  className="p-1 hover:bg-white/20 rounded transition-colors"
+                  title="Chat history"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </button>
+              )}
               <button 
                 onClick={clearChat}
                 className="p-1 hover:bg-white/20 rounded transition-colors"
-                title="Clear chat"
+                title="New chat"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
               </button>
               <button 
@@ -501,6 +597,37 @@ const EnhancedChatbot: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {/* Chat History Panel */}
+          {showHistory && isAuthenticated && (
+            <div className="border-b border-gray-200 p-4 bg-gray-50 max-h-32 overflow-y-auto">
+              <div className="text-sm font-medium text-gray-700 mb-2">Recent Chats</div>
+              <div className="space-y-1">
+                <button
+                  onClick={startNewChat}
+                  className="w-full text-left p-2 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100 transition-colors"
+                >
+                  + Start New Chat
+                </button>
+                {chatSessions.map((session) => (
+                  <button
+                    key={session.session_id}
+                    onClick={() => loadSpecificSession(session.session_id)}
+                    className={`w-full text-left p-2 text-xs rounded hover:bg-gray-100 transition-colors ${
+                      currentSessionId === session.session_id ? 'bg-gray-200' : 'bg-white'
+                    }`}
+                  >
+                    <div className="font-medium text-gray-800 truncate">
+                      {session.last_message || 'New conversation'}
+                    </div>
+                    <div className="text-gray-500">
+                      {new Date(session.last_message_at).toLocaleDateString()}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
@@ -517,7 +644,7 @@ const EnhancedChatbot: React.FC = () => {
                   }`}
                 >
                   <div className="text-sm">
-                    {renderMessage(message)}
+                    <div>{renderMessage(message)}</div>
                   </div>
                   <div className={`text-xs mt-1 ${
                     message.role === 'user' ? 'text-white/70' : 'text-gray-500'
@@ -552,7 +679,12 @@ const EnhancedChatbot: React.FC = () => {
                 ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
+onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
                 placeholder="Ask about jobs, search Gmail emails..."
                 className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 rows={1}
@@ -569,7 +701,10 @@ const EnhancedChatbot: React.FC = () => {
               </button>
             </div>
             <div className="mt-2 text-xs text-gray-500">
-              Try: "search Gmail for job emails" or "find emails from recruiters"
+              {isAuthenticated 
+                ? "Try: \"help me optimize my CV\" or \"what jobs match my skills?\""
+                : "Try: \"search Gmail for job emails\" or \"find emails from recruiters\""
+              }
             </div>
           </div>
         </div>

@@ -46,6 +46,16 @@ const Sidebar: React.FC<SidebarProps> = ({
       ),
       description: 'Google + CV powered search'
     },
+     {
+      id: 'emails',
+      label: 'Emails',
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12H8m8 0l-4 4m4-4l-4-4" />
+        </svg>
+      ),
+      description: 'Confirmations & follow-ups'
+    },
     {
       id: 'workflow',
       label: 'Setup Workflow',
@@ -76,16 +86,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       ),
       description: 'Automated job applications'
     },
-    {
-      id: 'emails',
-      label: 'Emails',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12H8m8 0l-4 4m4-4l-4-4" />
-        </svg>
-      ),
-      description: 'Confirmations & follow-ups'
-    },
+   
     {
       id: 'profile',
       label: 'Profile',
