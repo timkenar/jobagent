@@ -2,6 +2,22 @@ import React, { useState, useRef, useCallback } from 'react';
 import axios from 'axios';
 import { API_CONFIG } from '../../src/config/api'; // Add this import
 import LogoSpinner from '../ui/logospinner';
+import { 
+  TrashIcon, 
+  ArrowDownTrayIcon, 
+  ArrowPathIcon, 
+  PlusIcon,
+  EyeIcon,
+  StarIcon,
+  Cog6ToothIcon,
+  SunIcon,
+  MoonIcon,
+  XMarkIcon,
+  ExclamationTriangleIcon
+} from '@heroicons/react/24/outline';
+import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
+import ThemeToggle from '../shared/ThemeToggle';
+
 
 interface CVData {
   id: number;
@@ -23,15 +39,20 @@ interface CVData {
 }
 
 const CVUploadSection: React.FC = () => {
-  const [cv, setCV] = useState<CVData | null>(null);
+  const [cvs, setCvs] = useState<CVData[]>([]);
+  const [activeCV, setActiveCV] = useState<CVData | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
+  const [analyzing, setAnalyzing] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [darkMode, setDarkMode] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [cvToDelete, setCvToDelete] = useState<CVData | null>(null);
+  const [viewMode, setViewMode] = useState<'upload' | 'list'>('list');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Cache keys
@@ -87,6 +108,11 @@ const CVUploadSection: React.FC = () => {
 
   React.useEffect(() => {
     initializeCV();
+    // Load dark mode preference
+    const savedDarkMode = localStorage.getItem('cvSectionDarkMode');
+    if (savedDarkMode) {
+      setDarkMode(JSON.parse(savedDarkMode));
+    }
   }, []);
 
   const initializeCV = async () => {
@@ -95,18 +121,19 @@ const CVUploadSection: React.FC = () => {
     // Try to load from cache first
     const cachedCV = getCachedCV();
     if (cachedCV) {
-      setCV(cachedCV);
+      setActiveCV(cachedCV);
       setLoading(false);
       
       // Fetch fresh data in background
-      fetchActiveCV(true);
+      await fetchAllCVs(true);
     } else {
       // No cache, fetch fresh data
-      await fetchActiveCV();
+      await fetchAllCVs();
     }
   };
 
-  const fetchActiveCV = async (isBackgroundUpdate: boolean = false) => {
+  // Fetch all CVs
+  const fetchAllCVs = async (isBackgroundUpdate: boolean = false) => {
     try {
       const token = localStorage.getItem('authToken');
       if (!token) {
@@ -118,28 +145,29 @@ const CVUploadSection: React.FC = () => {
         setLoading(true);
       }
 
-      const baseUrl = API_CONFIG.BASE_URL ;
-      const url = `${baseUrl}/api/cvs/active/`;
+      const baseUrl = API_CONFIG.BASE_URL;
+      const url = `${baseUrl}/api/cvs/`;
       
-      console.log('Fetching active CV from URL:', url); // Debug log
+      console.log('Fetching all CVs from URL:', url);
       
       const response = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      const cvData = response.data;
-      setCV(cvData);
-      setCVCache(cvData); // Cache the fresh data
+      const cvsData = response.data.results || response.data;
+      setCvs(Array.isArray(cvsData) ? cvsData : []);
+      
+      // Find and set active CV
+      const active = cvsData.find((cv: CVData) => cv.is_active);
+      if (active) {
+        setActiveCV(active);
+        setCVCache(active);
+      }
       
     } catch (err: any) {
-      if (err.response?.status !== 404) {
-        console.error('Error fetching CV:', err);
-        if (!isBackgroundUpdate) {
-          setError('Failed to fetch CV data.');
-        }
-      } else {
-        // No CV found, clear cache
-        setCVCache(null);
+      console.error('Error fetching CVs:', err);
+      if (!isBackgroundUpdate) {
+        setError('Failed to fetch CV data.');
       }
     } finally {
       setLoading(false);
@@ -194,10 +222,12 @@ const CVUploadSection: React.FC = () => {
       });
 
       const cvData = response.data;
-      setCV(cvData);
+      setCvs(prev => [cvData, ...prev]);
+      setActiveCV(cvData);
       setCVCache(cvData); // Cache the new CV data
       setSuccessMessage('CV uploaded successfully! AI analysis is in progress...');
-      setAnalyzing(true);
+      setAnalyzing(cvData.id);
+      setViewMode('list');
 
       // Poll for analysis completion
       setTimeout(() => {
@@ -228,9 +258,12 @@ const CVUploadSection: React.FC = () => {
 
       if (response.data.analyzed_at) {
         const cvData = response.data;
-        setCV(cvData);
-        setCVCache(cvData); // Cache updated CV with analysis
-        setAnalyzing(false);
+        setCvs(prev => prev.map(cv => cv.id === cvId ? cvData : cv));
+        if (activeCV?.id === cvId) {
+          setActiveCV(cvData);
+          setCVCache(cvData);
+        }
+        setAnalyzing(null);
         setAnalysisProgress(100);
         setSuccessMessage('CV analysis completed! ✨');
         setTimeout(() => setSuccessMessage(''), 3000);
@@ -241,7 +274,7 @@ const CVUploadSection: React.FC = () => {
       }
     } catch (err) {
       console.error('Error checking analysis status:', err);
-      setAnalyzing(false);
+      setAnalyzing(null);
     }
   };
 
@@ -275,44 +308,52 @@ const CVUploadSection: React.FC = () => {
     fileInputRef.current?.click();
   };
 
-  const reanalyzeCV = async () => {
-    if (!cv || !cv.id) return;
+  // Toggle dark mode
+  const toggleDarkMode = () => {
+    const newDarkMode = !darkMode;
+    setDarkMode(newDarkMode);
+    localStorage.setItem('cvSectionDarkMode', JSON.stringify(newDarkMode));
+  };
 
-    setAnalyzing(true);
-    setError('');
-    
+  // Set CV as active
+  const setAsActiveCV = async (cv: CVData) => {
     try {
       const token = localStorage.getItem('authToken');
       if (!token) {
-        setError('Authentication required to reanalyze CV.');
-        setAnalyzing(false);
+        setError('Authentication required to set active CV.');
         return;
       }
 
-      const baseUrl = API_CONFIG.BASE_URL ;
-      const url = `${baseUrl}/api/cvs/${cv.id}/reanalyze/`;
-      
-      console.log('Reanalyzing CV with URL:', url); // Debug log
+      const baseUrl = API_CONFIG.BASE_URL;
+      const url = `${baseUrl}/api/cvs/${cv.id}/set-active/`;
       
       await axios.post(url, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      setSuccessMessage('CV reanalysis started. Please wait...');
-      
-      setTimeout(() => {
-        checkAnalysisStatus(cv.id);
-      }, 3000);
+      // Update local state
+      setCvs(prev => prev.map(c => ({
+        ...c,
+        is_active: c.id === cv.id
+      })));
+      setActiveCV(cv);
+      setCVCache(cv);
+      setSuccessMessage(`"${cv.original_filename}" is now your active CV.`);
+      setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err: any) {
-      console.error('Error reanalyzing CV:', err);
-      const errorMessage = err.response?.data?.error || err.message || 'Failed to reanalyze CV.';
-      setError(errorMessage);
-      setAnalyzing(false);
+      console.error('Error setting active CV:', err);
+      setError('Failed to set CV as active.');
     }
   };
 
+  // Delete CV
+  const confirmDeleteCV = (cv: CVData) => {
+    setCvToDelete(cv);
+    setDeleteModalOpen(true);
+  };
+
   const deleteCV = async () => {
-    if (!cv || !cv.id || !confirm('Are you sure you want to delete this CV?')) return;
+    if (!cvToDelete) return;
 
     try {
       const token = localStorage.getItem('authToken');
@@ -321,78 +362,145 @@ const CVUploadSection: React.FC = () => {
         return;
       }
 
-      const baseUrl = API_CONFIG.BASE_URL ;
-      const url = `${baseUrl}/api/cvs/${cv.id}/`;
-      
-      console.log('Deleting CV with URL:', url); // Debug log
+      const baseUrl = API_CONFIG.BASE_URL;
+      const url = `${baseUrl}/api/cvs/${cvToDelete.id}/`;
       
       await axios.delete(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      setCV(null);
-      setCVCache(null); // Clear cache when CV is deleted
+      // Update local state
+      setCvs(prev => prev.filter(cv => cv.id !== cvToDelete.id));
+      
+      if (activeCV?.id === cvToDelete.id) {
+        setActiveCV(null);
+        setCVCache(null);
+      }
+
       setSuccessMessage('CV deleted successfully.');
+      setDeleteModalOpen(false);
+      setCvToDelete(null);
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err: any) {
       console.error('Error deleting CV:', err);
-      const errorMessage = err.response?.data?.error || err.message || 'Failed to delete CV.';
-      setError(errorMessage);
+      setError('Failed to delete CV.');
     }
   };
 
-  // UPDATE operation - Update CV metadata
-  const updateCVMetadata = async (updates: Partial<CVData>) => {
-    if (!cv || !cv.id) return;
+  // Download CV
+  const downloadCV = (cv: CVData) => {
+    window.open(cv.file_url, '_blank');
+  };
 
+  // Reanalyze CV
+  const reanalyzeCV = async (cv: CVData) => {
     try {
-      const headers = getAuthHeaders();
-      const url = `${getBaseUrl()}/api/cvs/${cv.id}/`;
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        setError('Authentication required to reanalyze CV.');
+        return;
+      }
+
+      const baseUrl = API_CONFIG.BASE_URL;
+      const url = `${baseUrl}/api/cvs/${cv.id}/reanalyze/`;
       
-      console.log('Updating CV metadata with URL:', url); // Debug log
+      await axios.post(url, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setAnalyzing(cv.id);
+      setSuccessMessage('CV reanalysis started. Please wait...');
       
-      const response = await axios.patch(url, updates, { headers });
-      
-      setCV(response.data);
-      setSuccessMessage('CV updated successfully.');
-      setTimeout(() => setSuccessMessage(''), 3000);
+      setTimeout(() => {
+        checkAnalysisStatus(cv.id);
+      }, 3000);
     } catch (err: any) {
-      console.error('Error updating CV:', err);
-      const errorMessage = err.response?.data?.error || err.message || 'Failed to update CV.';
-      setError(errorMessage);
+      console.error('Error reanalyzing CV:', err);
+      setError('Failed to reanalyze CV.');
     }
   };
 
-  // LIST operation - Get all user CVs
-  const getAllCVs = async () => {
-    try {
-      const headers = getAuthHeaders();
-      const url = `${getBaseUrl()}/api/cvs/`;
-      
-      console.log('Fetching all CVs from URL:', url); // Debug log
-      
-      const response = await axios.get(url, { headers });
-      return response.data;
-    } catch (err: any) {
-      console.error('Error fetching all CVs:', err);
-      const errorMessage = err.response?.data?.error || err.message || 'Failed to fetch CVs.';
-      setError(errorMessage);
-      return [];
-    }
+
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  // Format file size
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
+    <div className={`${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'} rounded-xl shadow-lg border ${darkMode ? 'border-gray-700' : 'border-gray-200'} p-6 transition-colors duration-300`}>
       {/* Header */}
-      <div className="flex items-center space-x-3 mb-6">
-        <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center">
-          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
+
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-3">
+          <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center">
+            <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <div>
+            <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>CV Upload & Management</h3>
+            <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Upload and manage your CVs for AI-powered job matching</p>
+          </div>
         </div>
-        <div>
-          <h3 className="text-xl font-bold text-gray-900">CV Upload & Analysis</h3>
-          <p className="text-gray-600 text-sm">Upload your CV for AI-powered job matching</p>
+        
+        <div className="flex items-center space-x-2">
+          {/* View Mode Toggle */}
+          <div className="flex items-center space-x-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              List
+            </button>
+            <button
+              onClick={() => setViewMode('upload')}
+              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                viewMode === 'upload'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              Upload
+            </button>
+          </div>
+          
+          {/* Dark Mode Toggle */}
+          <button
+            onClick={toggleDarkMode}
+            className={`p-2 rounded-lg transition-colors ${
+              darkMode 
+                ? 'bg-gray-800 text-yellow-400 hover:bg-gray-700' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+            title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {darkMode ? <SunIcon className="w-5 h-5" /> : <MoonIcon className="w-5 h-5" />}
+          </button>
+          
+          {/* Add CV Button */}
+          {viewMode === 'list' && (
+            <button
+              onClick={() => setViewMode('upload')}
+              className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-purple-500 to-pink-600 hover:opacity-90 transition-opacity"
+            >
+              <PlusIcon className="w-4 h-4 mr-2" />
+              Add CV
+            </button>
+          )}
         </div>
       </div>
 
@@ -448,24 +556,37 @@ const CVUploadSection: React.FC = () => {
 
       {/* Messages */}
       {successMessage && (
-        <div className="mb-4 p-3 bg-green-100 border border-green-300 text-green-700 rounded-lg">
+        <div className={`mb-4 p-3 rounded-lg border ${
+          darkMode 
+            ? 'bg-green-900/20 border-green-700 text-green-300' 
+            : 'bg-green-100 border-green-300 text-green-700'
+        }`}>
           {successMessage}
         </div>
       )}
 
       {error && (
-        <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded-lg">
+        <div className={`mb-4 p-3 rounded-lg border ${
+          darkMode 
+            ? 'bg-red-900/20 border-red-700 text-red-300' 
+            : 'bg-red-100 border-red-300 text-red-700'
+        }`}>
           {error}
         </div>
       )}
 
-      {!cv ? (
+      {/* Content based on view mode */}
+      {viewMode === 'upload' ? (
         /* Upload Area */
         <div
           className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${
             dragActive
-              ? 'border-purple-500 bg-purple-50'
-              : 'border-gray-300 hover:border-purple-400 hover:bg-gray-50'
+              ? darkMode 
+                ? 'border-purple-400 bg-purple-900/20' 
+                : 'border-purple-500 bg-purple-50'
+              : darkMode
+                ? 'border-gray-600 hover:border-purple-400 hover:bg-gray-800/50'
+                : 'border-gray-300 hover:border-purple-400 hover:bg-gray-50'
           }`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
@@ -480,17 +601,19 @@ const CVUploadSection: React.FC = () => {
             className="hidden"
           />
 
-          <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
+            darkMode ? 'bg-purple-900/30' : 'bg-purple-100'
+          }`}>
             <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
             </svg>
           </div>
 
-          <h4 className="text-lg font-semibold text-gray-900 mb-2">
+          <h4 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
             {uploading ? 'Uploading CV...' : 'Upload Your CV'}
           </h4>
           
-          <p className="text-gray-600 mb-4">
+          <p className={`mb-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
             Drag and drop your CV here, or click to browse
           </p>
 
@@ -508,181 +631,229 @@ const CVUploadSection: React.FC = () => {
             <span>{uploading ? 'Uploading...' : 'Choose File'}</span>
           </button>
 
-          <p className="text-xs text-gray-500 mt-3">
+          <p className={`text-xs mt-3 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
             Supported formats: PDF, DOC, DOCX (Max 10MB)
           </p>
         </div>
       ) : (
-        /* CV Display */
-        <div className="space-y-6">
-          {/* CV File Info */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-900">{cv.original_filename}</h4>
-                  <p className="text-sm text-gray-500">
-                    {cv.file_size_formatted} • {cv.file_type?.toUpperCase() || 'PDF'} • 
-                    Uploaded {new Date(cv.uploaded_at).toLocaleDateString()}
-                  </p>
+        /* CV List View */
+        <div className="space-y-4">
+          {cvs.length === 0 ? (
+            <div className={`text-center py-12 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+              <svg className={`mx-auto h-12 w-12 mb-4 ${darkMode ? 'text-gray-600' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3 className={`text-lg font-medium mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>No CVs uploaded</h3>
+              <p className="mb-4">Get started by uploading your first CV.</p>
+              <button
+                onClick={() => setViewMode('upload')}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-purple-500 to-pink-600 hover:opacity-90"
+              >
+                <PlusIcon className="w-4 h-4 mr-2" />
+                Upload CV
+              </button>
+            </div>
+          ) : (
+            cvs.map((cv) => (
+              <div
+                key={cv.id}
+                className={`rounded-lg p-4 border transition-all ${
+                  cv.is_active
+                    ? darkMode
+                      ? 'bg-purple-900/20 border-purple-700'
+                      : 'bg-purple-50 border-purple-200'
+                    : darkMode
+                      ? 'bg-gray-800 border-gray-700 hover:border-gray-600'
+                      : 'bg-gray-50 border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4 flex-1">
+                    <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${
+                      darkMode ? 'bg-gray-700' : 'bg-white'
+                    }`}>
+                      <svg className={`w-6 h-6 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <h4 className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                          {cv.original_filename}
+                        </h4>
+                        {cv.is_active && (
+                          <StarIconSolid className="w-5 h-5 text-yellow-400" title="Active CV" />
+                        )}
+                        {analyzing === cv.id && (
+                          <div className="flex items-center space-x-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                            <span className="text-xs text-blue-600">Analyzing...</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className={`flex items-center space-x-4 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                        <span>{cv.file_size_formatted || formatFileSize(0)}</span>
+                        <span>{cv.file_type?.toUpperCase()}</span>
+                        <span>Uploaded {formatDate(cv.uploaded_at)}</span>
+                        {cv.analyzed_at && (
+                          <span className="text-green-600">✓ Analyzed</span>
+                        )}
+                      </div>
+                      
+                      {cv.analyzed_at && cv.skills && cv.skills.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {cv.skills.slice(0, 5).map((skill, index) => (
+                            <span
+                              key={index}
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                darkMode 
+                                  ? 'bg-blue-900/30 text-blue-300' 
+                                  : 'bg-blue-100 text-blue-800'
+                              }`}
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                          {cv.skills.length > 5 && (
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              darkMode 
+                                ? 'bg-gray-700 text-gray-300' 
+                                : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              +{cv.skills.length - 5} more
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 ml-4">
+                    {!cv.is_active && (
+                      <button
+                        onClick={() => setAsActiveCV(cv)}
+                        className={`p-2 rounded transition-colors ${
+                          darkMode 
+                            ? 'text-gray-400 hover:text-yellow-400 hover:bg-gray-700' 
+                            : 'text-gray-400 hover:text-yellow-600 hover:bg-white'
+                        }`}
+                        title="Set as Active CV"
+                      >
+                        <StarIcon className="w-5 h-5" />
+                      </button>
+                    )}
+                    
+                    <button
+                      onClick={() => downloadCV(cv)}
+                      className={`p-2 rounded transition-colors ${
+                        darkMode 
+                          ? 'text-gray-400 hover:text-blue-400 hover:bg-gray-700' 
+                          : 'text-gray-400 hover:text-blue-600 hover:bg-white'
+                      }`}
+                      title="Download CV"
+                    >
+                      <ArrowDownTrayIcon className="w-5 h-5" />
+                    </button>
+                    
+                    <button
+                      onClick={() => window.open(cv.file_url, '_blank')}
+                      className={`p-2 rounded transition-colors ${
+                        darkMode 
+                          ? 'text-gray-400 hover:text-green-400 hover:bg-gray-700' 
+                          : 'text-gray-400 hover:text-green-600 hover:bg-white'
+                      }`}
+                      title="View CV"
+                    >
+                      <EyeIcon className="w-5 h-5" />
+                    </button>
+                    
+                    {cv.analyzed_at && (
+                      <button
+                        onClick={() => reanalyzeCV(cv)}
+                        disabled={analyzing === cv.id}
+                        className={`p-2 rounded transition-colors disabled:opacity-50 ${
+                          darkMode 
+                            ? 'text-gray-400 hover:text-purple-400 hover:bg-gray-700' 
+                            : 'text-gray-400 hover:text-purple-600 hover:bg-white'
+                        }`}
+                        title="Re-analyze CV"
+                      >
+                        <ArrowPathIcon className="w-5 h-5" />
+                      </button>
+                    )}
+                    
+                    <button
+                      onClick={() => confirmDeleteCV(cv)}
+                      className={`p-2 rounded transition-colors ${
+                        darkMode 
+                          ? 'text-gray-400 hover:text-red-400 hover:bg-gray-700' 
+                          : 'text-gray-400 hover:text-red-600 hover:bg-white'
+                      }`}
+                      title="Delete CV"
+                    >
+                      <TrashIcon className="w-5 h-5" />
+                    </button>
+                  </div>
                 </div>
               </div>
-              
-              <div className="flex items-center space-x-2">
-                <a
-                  href={cv.file_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
-                  title="Download CV"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </a>
-                
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalOpen && cvToDelete && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div className="fixed inset-0 transition-opacity" aria-hidden="true">
+              <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+            <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div className={`inline-block align-bottom rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6 ${
+              darkMode ? 'bg-gray-800' : 'bg-white'
+            }`}>
+              <div className="sm:flex sm:items-start">
+                <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                  <ExclamationTriangleIcon className="h-6 w-6 text-red-600" aria-hidden="true" />
+                </div>
+                <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                  <h3 className={`text-lg leading-6 font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    Delete CV
+                  </h3>
+                  <div className="mt-2">
+                    <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>
+                      Are you sure you want to delete "{cvToDelete.original_filename}"? This action cannot be undone.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
                 <button
-                  onClick={reanalyzeCV}
-                  disabled={analyzing}
-                  className="p-2 text-gray-400 hover:text-purple-600 transition-colors disabled:opacity-50"
-                  title="Re-analyze CV"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                  </svg>
-                </button>
-                
-                <button
+                  type="button"
+                  className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm"
                   onClick={deleteCV}
-                  className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-                  title="Delete CV"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
+                  Delete
+                </button>
+                <button
+                  type="button"
+                  className={`mt-3 w-full inline-flex justify-center rounded-md border shadow-sm px-4 py-2 text-base font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:w-auto sm:text-sm ${
+                    darkMode 
+                      ? 'border-gray-600 bg-gray-700 text-white hover:bg-gray-600' 
+                      : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                  onClick={() => {
+                    setDeleteModalOpen(false);
+                    setCvToDelete(null);
+                  }}
+                >
+                  Cancel
                 </button>
               </div>
             </div>
           </div>
-
-          {/* Analysis Status */}
-          {analyzing && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center space-x-3">
-                <svg className="animate-spin h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <div>
-                  <p className="font-medium text-blue-900">AI Analysis in Progress</p>
-                  <p className="text-sm text-blue-700">Extracting skills, experience, and generating insights...</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Analysis Results */}
-          {cv.analyzed_at && (
-            <div className="space-y-4">
-              <h4 className="text-lg font-semibold text-gray-900">AI Analysis Results</h4>
-              
-              {/* Quick Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-blue-50 p-4 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-blue-600">{cv.skills.length}</div>
-                  <div className="text-sm text-blue-600">Skills</div>
-                </div>
-                <div className="bg-green-50 p-4 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-green-600">{cv.experience_years || 0}</div>
-                  <div className="text-sm text-green-600">Years Exp.</div>
-                </div>
-                <div className="bg-purple-50 p-4 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-purple-600">{cv.languages.length}</div>
-                  <div className="text-sm text-purple-600">Languages</div>
-                </div>
-                <div className="bg-orange-50 p-4 rounded-lg text-center">
-                  <div className="text-2xl font-bold text-orange-600">{cv.job_titles.length}</div>
-                  <div className="text-sm text-orange-600">Positions</div>
-                </div>
-              </div>
-
-              {/* Detailed Analysis */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Profile Summary */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h5 className="font-medium text-gray-900 mb-3">Profile Summary</h5>
-                  <div className="space-y-2 text-sm">
-                    {cv.job_category && (
-                      <div>
-                        <span className="font-medium text-gray-700">Category:</span>
-                        <span className="ml-2 text-gray-600">{cv.job_category}</span>
-                      </div>
-                    )}
-                    {cv.seniority_level && (
-                      <div>
-                        <span className="font-medium text-gray-700">Level:</span>
-                        <span className="ml-2 text-gray-600 capitalize">{cv.seniority_level}</span>
-                      </div>
-                    )}
-                    {/* To make changes in currency based on the counties */}
-                    {(cv.salary_range_min || cv.salary_range_max) && (
-                      <div>
-                        <span className="font-medium text-gray-700">Expected Salary:</span>
-                        <span className="ml-2 text-gray-600">
-                          ${cv.salary_range_min?.toLocaleString() || '?'} - ${cv.salary_range_max?.toLocaleString() || '?'}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Skills */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h5 className="font-medium text-gray-900 mb-3">Top Skills</h5>
-                  <div className="flex flex-wrap gap-2">
-                    {cv.skills.slice(0, 8).map((skill, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-medium rounded-full"
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                    {cv.skills.length > 8 && (
-                      <span className="px-3 py-1 bg-gray-200 text-gray-600 text-xs font-medium rounded-full">
-                        +{cv.skills.length - 8} more
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Upload New Version */}
-              <div className="border-t border-gray-200 pt-4">
-                <button
-                  onClick={triggerFileInput}
-                  className="text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center space-x-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                  </svg>
-                  <span>Upload New Version</span>
-                </button>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf,.doc,.docx"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>

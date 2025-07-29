@@ -17,6 +17,7 @@ import {
   Send,
   BarChart3
 } from 'lucide-react';
+import { useTheme } from "../../src/contexts/ThemeContext";
 import { JobSearchAutomation } from './JobSearchAutomation';
 import { AutomationSettings } from './AutomationSettings';
 import { AutomationHistory } from './AutomationHistory';
@@ -35,6 +36,7 @@ interface AutomationDashboardProps {
 }
 
 export const AutomationDashboard: React.FC<AutomationDashboardProps> = ({ user }) => {
+  const { isDark } = useTheme();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'search' | 'settings' | 'history' | 'connections'>('dashboard');
   const [stats, setStats] = useState<AutomationStats>({
     today_applications: 0,
@@ -73,15 +75,19 @@ export const AutomationDashboard: React.FC<AutomationDashboardProps> = ({ user }
   };
 
   const StatsCard = ({ title, value, icon: Icon, color = 'blue' }: any) => (
-    <Card>
+    <Card className={`transition-colors ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-600">{title}</p>
-            <p className="text-2xl font-bold text-gray-900">{value}</p>
+            <p className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{title}</p>
+            <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{value}</p>
           </div>
-          <div className={`p-3 rounded-lg bg-${color}-100`}>
-            <Icon className={`h-6 w-6 text-${color}-600`} />
+          <div className={`p-3 rounded-lg ${
+            isDark ? 'bg-gray-700' : `bg-${color}-100`
+          }`}>
+            <Icon className={`h-6 w-6 ${
+              isDark ? 'text-gray-300' : `text-${color}-600`
+            }`} />
           </div>
         </div>
       </CardContent>
@@ -93,8 +99,12 @@ export const AutomationDashboard: React.FC<AutomationDashboardProps> = ({ user }
       onClick={() => setActiveTab(id)}
       className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
         active 
-          ? 'bg-blue-100 text-blue-700 border-blue-200' 
-          : 'text-gray-600 hover:bg-gray-100'
+          ? isDark
+            ? 'bg-blue-900/50 text-blue-300 border-blue-700'
+            : 'bg-blue-100 text-blue-700 border-blue-200'
+          : isDark
+            ? 'text-gray-300 hover:bg-gray-700'
+            : 'text-gray-600 hover:bg-gray-100'
       }`}
     >
       <Icon className="h-4 w-4" />
@@ -104,12 +114,12 @@ export const AutomationDashboard: React.FC<AutomationDashboardProps> = ({ user }
 
   if (isLoading) {
     return (
-      <div className="p-6">
+      <div className={`p-6 transition-colors ${isDark ? 'bg-gray-900' : 'bg-white'}`}>
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
+          <div className={`h-8 rounded w-1/4 mb-6 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 bg-gray-200 rounded"></div>
+              <div key={i} className={`h-32 rounded ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
             ))}
           </div>
         </div>
@@ -118,12 +128,12 @@ export const AutomationDashboard: React.FC<AutomationDashboardProps> = ({ user }
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className={`p-6 space-y-6 transition-colors ${isDark ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'}`}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Job Application Automation</h1>
-          <p className="text-gray-600">Automate your job search and applications with AI</p>
+          <h1 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Job Application Automation</h1>
+          <p className={`${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Automate your job search and applications with AI</p>
         </div>
         <div className="flex items-center space-x-3">
           <Badge variant={automationStatus === 'running' ? 'default' : 'secondary'}>
@@ -175,9 +185,9 @@ export const AutomationDashboard: React.FC<AutomationDashboardProps> = ({ user }
       </div>
 
       {/* Quick Actions */}
-      <Card>
+      <Card className={`transition-colors ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
+          <CardTitle className={`flex items-center space-x-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
             <Bot className="h-5 w-5" />
             <span>Quick Actions</span>
           </CardTitle>
@@ -187,36 +197,48 @@ export const AutomationDashboard: React.FC<AutomationDashboardProps> = ({ user }
             <Button 
               onClick={() => setActiveTab('search')}
               variant="outline" 
-              className="flex items-center space-x-2 p-4 h-auto"
+              className={`flex items-center space-x-2 p-4 h-auto transition-colors ${
+                isDark 
+                  ? 'border-gray-600 bg-gray-700 text-white hover:bg-gray-600' 
+                  : 'border-gray-300 bg-white text-gray-900 hover:bg-gray-50'
+              }`}
             >
               <Search className="h-6 w-6" />
               <div className="text-left">
                 <div className="font-medium">Search & Apply</div>
-                <div className="text-sm text-gray-500">Find and apply to jobs automatically</div>
+                <div className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>Find and apply to jobs automatically</div>
               </div>
             </Button>
             
             <Button 
               onClick={() => setActiveTab('connections')}
               variant="outline" 
-              className="flex items-center space-x-2 p-4 h-auto"
+              className={`flex items-center space-x-2 p-4 h-auto transition-colors ${
+                isDark 
+                  ? 'border-gray-600 bg-gray-700 text-white hover:bg-gray-600' 
+                  : 'border-gray-300 bg-white text-gray-900 hover:bg-gray-50'
+              }`}
             >
               <Settings className="h-6 w-6" />
               <div className="text-left">
                 <div className="font-medium">Platform Setup</div>
-                <div className="text-sm text-gray-500">Connect your job platform accounts</div>
+                <div className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>Connect your job platform accounts</div>
               </div>
             </Button>
             
             <Button 
               onClick={() => setActiveTab('history')}
               variant="outline" 
-              className="flex items-center space-x-2 p-4 h-auto"
+              className={`flex items-center space-x-2 p-4 h-auto transition-colors ${
+                isDark 
+                  ? 'border-gray-600 bg-gray-700 text-white hover:bg-gray-600' 
+                  : 'border-gray-300 bg-white text-gray-900 hover:bg-gray-50'
+              }`}
             >
               <BarChart3 className="h-6 w-6" />
               <div className="text-left">
                 <div className="font-medium">View History</div>
-                <div className="text-sm text-gray-500">Track your automation results</div>
+                <div className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>Track your automation results</div>
               </div>
             </Button>
           </div>
@@ -224,7 +246,7 @@ export const AutomationDashboard: React.FC<AutomationDashboardProps> = ({ user }
       </Card>
 
       {/* Navigation Tabs */}
-      <div className="flex space-x-4 border-b border-gray-200">
+      <div className={`flex space-x-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
         <TabButton 
           id="dashboard" 
           label="Dashboard" 
@@ -261,7 +283,11 @@ export const AutomationDashboard: React.FC<AutomationDashboardProps> = ({ user }
       <div className="mt-6">
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
-            <Alert>
+            <Alert className={`transition-colors ${
+              isDark 
+                ? 'bg-gray-800 border-gray-700 text-gray-300' 
+                : 'bg-white border-gray-200 text-gray-900'
+            }`}>
               <Bot className="h-4 w-4" />
               <AlertDescription>
                 Welcome to job application automation! Connect your platforms and start automating your job search.
@@ -269,31 +295,31 @@ export const AutomationDashboard: React.FC<AutomationDashboardProps> = ({ user }
             </Alert>
             
             {/* Recent Activity */}
-            <Card>
+            <Card className={`transition-colors ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
               <CardHeader>
-                <CardTitle>Recent Activity</CardTitle>
+                <CardTitle className={`${isDark ? 'text-white' : 'text-gray-900'}`}>Recent Activity</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   <div className="flex items-center space-x-3">
                     <CheckCircle className="h-5 w-5 text-green-500" />
                     <div>
-                      <p className="font-medium">Applied to Software Engineer at TechCorp</p>
-                      <p className="text-sm text-gray-500">2 hours ago</p>
+                      <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>Applied to Software Engineer at TechCorp</p>
+                      <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>2 hours ago</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
                     <CheckCircle className="h-5 w-5 text-green-500" />
                     <div>
-                      <p className="font-medium">Applied to Frontend Developer at StartupXYZ</p>
-                      <p className="text-sm text-gray-500">4 hours ago</p>
+                      <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>Applied to Frontend Developer at StartupXYZ</p>
+                      <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>4 hours ago</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-3">
                     <XCircle className="h-5 w-5 text-red-500" />
                     <div>
-                      <p className="font-medium">Failed to apply to Senior Developer at BigCorp</p>
-                      <p className="text-sm text-gray-500">6 hours ago</p>
+                      <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>Failed to apply to Senior Developer at BigCorp</p>
+                      <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>6 hours ago</p>
                     </div>
                   </div>
                 </div>

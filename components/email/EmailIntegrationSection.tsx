@@ -21,37 +21,28 @@ const EmailIntegrationSection: React.FC = () => {
   const [connectionProgress, setConnectionProgress] = useState(0);
   const sectionRef = useRef<HTMLDivElement>(null);
 
-  // Cache keys for email accounts
-  const EMAIL_CACHE_KEY = 'email_accounts_cache';
-  const EMAIL_CACHE_TIMESTAMP_KEY = 'email_cache_timestamp';
   const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
-  // Cache helper functions
   const getCachedEmailAccounts = () => {
     try {
-      const cachedData = localStorage.getItem(EMAIL_CACHE_KEY);
-      const cacheTimestamp = localStorage.getItem(EMAIL_CACHE_TIMESTAMP_KEY);
+      const cachedData = localStorage.getItem('email_accounts_cache');
+      const cacheTimestamp = localStorage.getItem('email_cache_timestamp');
       
-      if (cachedData && cacheTimestamp) {
-        const age = Date.now() - parseInt(cacheTimestamp);
-        if (age < CACHE_DURATION) {
-          return JSON.parse(cachedData);
-        } else {
-          // Cache expired, clear it
-          localStorage.removeItem(EMAIL_CACHE_KEY);
-          localStorage.removeItem(EMAIL_CACHE_TIMESTAMP_KEY);
-        }
+      if (cachedData && cacheTimestamp && Date.now() - parseInt(cacheTimestamp) < CACHE_DURATION) {
+        return JSON.parse(cachedData);
       }
+      localStorage.removeItem('email_accounts_cache');
+      localStorage.removeItem('email_cache_timestamp');
     } catch (error) {
-      console.error('Error reading email accounts cache:', error);
+      console.error('Error with email accounts cache:', error);
     }
     return null;
   };
 
   const setEmailAccountsCache = (accounts: any[]) => {
     try {
-      localStorage.setItem(EMAIL_CACHE_KEY, JSON.stringify(accounts));
-      localStorage.setItem(EMAIL_CACHE_TIMESTAMP_KEY, Date.now().toString());
+      localStorage.setItem('email_accounts_cache', JSON.stringify(accounts));
+      localStorage.setItem('email_cache_timestamp', Date.now().toString());
     } catch (error) {
       console.error('Error setting email accounts cache:', error);
     }
@@ -71,51 +62,29 @@ const EmailIntegrationSection: React.FC = () => {
 
   const initializeEmailAccounts = async () => {
     setLoading(true);
-    
-    // Try to load from cache first
     const cachedAccounts = getCachedEmailAccounts();
+    
     if (cachedAccounts && gmail.accounts.length === 0) {
-      // Load cached accounts if available
-      console.log('Loading email accounts from cache');
       setLoading(false);
-      
-      // Refresh in background
-      setTimeout(() => {
-        refreshEmailAccountsInBackground();
-      }, 1000);
+      setTimeout(() => refreshEmailAccounts(true), 1000);
     } else {
-      // No cache or already have accounts, fetch fresh data
       await refreshEmailAccounts();
     }
   };
 
-  const refreshEmailAccounts = async () => {
+  const refreshEmailAccounts = async (background = false) => {
     try {
-      setLoading(true);
+      if (!background) setLoading(true);
       await gmail.refreshAccounts();
       
-      // Cache the accounts
       if (gmail.accounts.length > 0) {
         setEmailAccountsCache(gmail.accounts);
       }
     } catch (error) {
       console.error('Error refreshing email accounts:', error);
-      setError('Failed to load email accounts');
+      if (!background) setError('Failed to load email accounts');
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const refreshEmailAccountsInBackground = async () => {
-    try {
-      await gmail.refreshAccounts();
-      
-      // Update cache with fresh data
-      if (gmail.accounts.length > 0) {
-        setEmailAccountsCache(gmail.accounts);
-      }
-    } catch (error) {
-      console.error('Background refresh failed:', error);
+      if (!background) setLoading(false);
     }
   };
 
@@ -128,17 +97,23 @@ const EmailIntegrationSection: React.FC = () => {
       if (event.data?.type === 'gmail_oauth_success') {
         console.log('Gmail OAuth success received from popup');
         setConnectionProgress(80); // Processing authorization
-        setSuccessMessage('Gmail connected successfully! 🎉');
+        setSuccessMessage('🎉 Email connected successfully! You can now manage your job application emails.');
         
-        // Refresh accounts and update cache
         gmail.refreshAccounts().then(() => {
           setEmailAccountsCache(gmail.accounts);
           setConnectionProgress(100);
           setConnecting(false);
+          
+          // Persist connection status
+          localStorage.setItem('email_connected', 'true');
+          localStorage.setItem('email_connection_time', new Date().toISOString());
+        }).catch(() => {
+          setError('Failed to refresh accounts after connection');
+          setConnecting(false);
         });
         
-        // Clear success message after 3 seconds
-        setTimeout(() => setSuccessMessage(''), 3000);
+        // Clear success message after 5 seconds
+        setTimeout(() => setSuccessMessage(''), 5000);
       }
       
       // Handle OAuth errors from popup
@@ -214,6 +189,40 @@ const EmailIntegrationSection: React.FC = () => {
           'Failed to initiate authentication. Please check your connection and try again.'
         );
       }
+      setConnecting(false);
+    }
+  };
+
+  const handleDisconnect = async (accountId: number) => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        setError('Please sign in to disconnect your email account.');
+        return;
+      }
+
+      const response = await axios.delete(`${API_CONFIG.BASE_URL}/api/email-accounts/${accountId}/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.status === 200 || response.status === 204) {
+        setSuccessMessage('✅ Email account disconnected successfully!');
+        
+        // Clear connection status from localStorage
+        localStorage.removeItem('email_connected');
+        localStorage.removeItem('email_connection_time');
+        localStorage.removeItem('email_accounts_cache');
+        localStorage.removeItem('email_cache_timestamp');
+        
+        // Refresh accounts to update UI
+        await gmail.refreshAccounts();
+        
+        setTimeout(() => setSuccessMessage(''), 3000);
+      }
+    } catch (error: any) {
+      setError(error.response?.data?.error || 'Failed to disconnect email account');
+    } finally {
       setLoading(false);
     }
   };
@@ -406,9 +415,18 @@ const EmailIntegrationSection: React.FC = () => {
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-2 self-end sm:self-auto">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-xs sm:text-sm text-green-600 font-medium whitespace-nowrap">Connected</span>
+                <div className="flex items-center space-x-3 self-end sm:self-auto">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-xs sm:text-sm text-green-600 font-medium whitespace-nowrap">Connected</span>
+                  </div>
+                  <button
+                    onClick={() => handleDisconnect(acc.id)}
+                    className="text-xs text-red-600 hover:text-red-800 px-2 py-1 border border-red-200 hover:border-red-300 rounded transition-colors"
+                    disabled={loading}
+                  >
+                    Disconnect
+                  </button>
                 </div>
               </div>
             ))}

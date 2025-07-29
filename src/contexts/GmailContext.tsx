@@ -65,11 +65,14 @@ export const GmailProvider: React.FC<GmailProviderProps> = ({ children }) => {
     const connectedGmail = emailAccounts.find(account => account.provider === 'gmail');
     setGmailAccount(connectedGmail || null);
     
-    // Auto-fetch default emails when Gmail is connected
-    if (connectedGmail && emails.length === 0) {
+    // Only auto-fetch if we have valid connection and no existing error
+    if (connectedGmail && emails.length === 0 && !error) {
       fetchEmails().catch(err => {
         console.debug('Auto-fetch emails failed:', err.message);
-        // Don't throw error for auto-fetch failures
+        // Set a gentle error that doesn't block UI
+        if (err.message.includes('401') || err.message.includes('Unauthorized')) {
+          setError('Please reconnect your email account to fetch latest emails');
+        }
       });
     }
   }, [emailAccounts]);
