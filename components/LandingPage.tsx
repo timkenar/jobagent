@@ -4,7 +4,7 @@ import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import { FaInstagram, FaWhatsapp } from 'react-icons/fa';
 import AIFeaturesSection from './AIFeaturesSection';
 import TestimonialsSection from './testimonials-section';
-import { Wifi, Battery, Signal } from 'lucide-react';
+import { Wifi, Battery, Signal, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface LandingPageProps {
   onGetStarted: () => void;
@@ -196,6 +196,12 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onSignIn }) => 
                       <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
                       <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                     </div>
+                    <button className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-gray-700">
+              <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button className="text-gray-400 hover:text-white transition-colors p-1 rounded hover:bg-gray-700">
+              <ChevronRight className="w-4 h-4" />
+                    </button>
                     <div className="flex-1 max-w-md mx-4">
                       <div className="bg-gray-700 rounded-full px-4 py-2 text-center border border-gray-600">
                         <span className="text-sm text-gray-300">🔒 ai-job-agent.ai</span>
@@ -235,7 +241,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onSignIn }) => 
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                           </svg>
-                          <span>Team</span>
+                          <span>Recruiters</span>
                         </div>
                         <div className="flex items-center space-x-2 text-gray-400 p-2 hover:bg-gray-700 rounded-lg cursor-pointer text-sm">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -251,14 +257,14 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onSignIn }) => 
                       <div className="mb-6">
                         <h2 className="text-white text-lg font-semibold mb-3">How can I help you today?</h2>
                         <div className="border-t border-gray-700 pt-4">
-                          <div className="text-sm text-gray-500 uppercase tracking-wide mb-3">LinkedIn</div>
+                          {/* <div className="text-sm text-gray-500 uppercase tracking-wide mb-3">LinkedIn</div> */}
                           <div className="space-y-2">
-                            <div className="text-gray-300 text-sm hover:text-white cursor-pointer p-2 hover:bg-gray-800 rounded">
+                            {/* <div className="text-gray-300 text-sm hover:text-white cursor-pointer p-2 hover:bg-gray-800 rounded">
                               Explain quantum computing
-                            </div>
-                            <div className="text-gray-300 text-sm hover:text-white cursor-pointer p-2 hover:bg-gray-800 rounded">
+                            </div> */}
+                            {/* <div className="text-gray-300 text-sm hover:text-white cursor-pointer p-2 hover:bg-gray-800 rounded">
                               How do I make HTTP request in Javascript?
-                            </div>
+                            </div> */}
                           </div>
                         </div>
                       </div>

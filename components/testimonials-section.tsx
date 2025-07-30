@@ -3,8 +3,6 @@
 interface Testimonial {
   id: number
   name: string
-  // title: string
-  // company: string
   content: string
   avatar: string
 }
@@ -14,53 +12,47 @@ export default function TestimonialsSection() {
     {
       id: 1,
       name: "Timothy Chepkener",
-            content:
-        "I recently used an AI chat system and it exceeded my expectations. The speed and accuracy of the responses were impressive, and the personalized recommendations were a nice touch. I highly recommend it to anyone looking to streamline their Job Application process.",
-      avatar: "/placeholder.svg?height=60&width=60",
+      content:
+        "I recently used the AI chat system and it exceeded my expectations. The speed and accuracy of the responses were impressive, and the personalized recommendations were a nice touch. I highly recommend it to anyone looking to streamline their Job Application process.",
+      avatar: "https://ui-avatars.com/api/?name=Timothy+Chepkener&background=random&size=60",
     },
     {
       id: 2,
       name: "Sarah",
-     
       content:
         "The Automated Job Search Assistant has been a game-changer for me. It helped me find relevant job openings quickly and efficiently. The AI's ability to understand my skills and preferences made the process so much easier. I landed a great job within weeks!",
-      avatar: "/placeholder.svg?height=60&width=60",
+      avatar: "https://ui-avatars.com/api/?name=Sarah&background=random&size=60",
     },
     {
       id: 3,
       name: "Michael Muya",
-     
       content:
         "It recommended jobs that perfectly matched my skills and experience.",
-      avatar: "/placeholder.svg?height=60&width=60",
+      avatar: "https://ui-avatars.com/api/?name=Michael+Muya&background=random&size=60",
     },
     {
       id: 4,
       name: "Susan Wanjiru",
-     
       content:
         "The tool extracted key information from my CV and cover letter, making it easy to apply for jobs.",
-      avatar: "/placeholder.svg?height=60&width=60",
+      avatar: "https://ui-avatars.com/api/?name=Susan+Wanjiru&background=random&size=60",
     },
     {
       id: 5,
       name: "David Kamau",
- 
       content:
-        "It's a comprehensive CV intelligence platform. Helped me in personlization of my CV and cover letter, and the AI job search feature is a game changer. ",
-      avatar: "/placeholder.svg?height=60&width=60",
+        "It's a comprehensive CV intelligence platform. Helped me in personlization of my CV and cover letter, and the AI job search feature is a game changer.",
+      avatar: "https://ui-avatars.com/api/?name=David+Kamau&background=random&size=60",
     },
     {
       id: 6,
       name: "Titus Kibiwot",
-   
       content:
         "It saved me hours of manual searching and helped me find relevant jobs that match my skills and experience.",
-      avatar: "/placeholder.svg?height=60&width=60",
+      avatar: "https://ui-avatars.com/api/?name=Titus+Kibiwot&background=random&size=60",
     },
   ]
 
-  // Duplicate testimonials for seamless loop
   const duplicatedTestimonials = [...testimonials, ...testimonials]
 
   return (
@@ -104,18 +96,15 @@ export default function TestimonialsSection() {
                   >
                     <div className="flex items-start space-x-4 mb-4">
                       <img
-                        src={testimonial.avatar || "/placeholder.svg"}
+                        src={testimonial.avatar}
                         alt={`${testimonial.name} avatar`}
                         className="w-12 h-12 rounded-full object-cover flex-shrink-0"
                       />
                       <div>
                         <h4 className="font-semibold text-white">{testimonial.name}</h4>
-                        <p className="text-sm text-gray-400">
-                          {testimonial.title} at {testimonial.company}
-                        </p>
                       </div>
                     </div>
-                    <p className="text-gray-300 leading-relaxed">{testimonial.content}</p>
+                    <p className="text-gray-300 leading-relaxed italic">"{testimonial.content}"</p>
                   </div>
                 ))}
               </div>
@@ -133,11 +122,9 @@ export default function TestimonialsSection() {
             transform: translateY(-50%);
           }
         }
-        
         .animate-scroll-up {
           animation: scroll-up 30s linear infinite;
         }
-        
         .animate-scroll-up:hover {
           animation-play-state: paused;
         }

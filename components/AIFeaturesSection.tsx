@@ -1,59 +1,41 @@
 "use client"
 
 import React from "react"
-import { Send, ChevronDown, Sparkles, Briefcase, User, CheckCircle, TrendingUp, DollarSign } from "lucide-react"
+import { ChevronDown, Sparkles, Briefcase, User, CheckCircle, TrendingUp, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Wifi, Battery, Signal,ChevronLeft, ChevronRight } from 'lucide-react';
 
 
 export default function AIFeaturesSection() {
-  const [message, setMessage] = React.useState("")
-  const [isTyping, setIsTyping] = React.useState(false)
+  // Color configuration - Change these values to customize button colors
+  const colors = {
+    primary: {
+      from: "#38bdf8", // Tailwind blue-500
+      to: "#38bdf8",
+      hoverFrom: "hover:from-green-500",
+      hoverTo: "hover:to-green-600",
+      text: "text-gray-900",
+      // For borders and accents
+      accent: "green-400",
+      accentOpacity: "green-400/30"
+    },
+    secondary: {
+      from: "from-blue-500",
+      to: "to-blue-600",
+      hoverFrom: "hover:from-blue-600",
+      hoverTo: "hover:to-blue-700",
+      text: "text-white"
+    }
+  }
 
   const handleGetStarted = (feature: string) => {
     console.log(`Getting started with ${feature}`)
   }
-
-  const handleSendMessage = () => {
-    if (message.trim()) {
-      setIsTyping(true)
-      setTimeout(() => setIsTyping(false), 2000)
-      setMessage("")
-    }
-  }
-
-  const jobApplications = [
-    { title: "Senior Software Engineer", company: "Google", salary: "$180k", location: "Remote", match: "95%" },
-    { title: "Product Manager", company: "Meta", salary: "$165k", location: "San Francisco", match: "88%" },
-    { title: "Data Scientist", company: "Netflix", salary: "$155k", location: "Los Angeles", match: "92%" },
-  ]
 
   const sidebarItems = [
     { name: "Job Search", active: true, icon: Briefcase, count: "12 new" },
     { name: "Applications", active: false, icon: CheckCircle, count: "47 sent" },
     { name: "Profile", active: false, icon: User, count: "85% complete" },
     { name: "Analytics", active: false, icon: TrendingUp, count: "View stats" },
-  ]
-
-  const aiMessages = [
-    {
-      type: "ai",
-      content: "I found 12 high-match jobs for your profile! 🎯 Would you like me to auto-apply to the top 5?",
-      timestamp: "2:34 PM",
-    },
-    {
-      type: "user",
-      content: "Yes, please apply to the software engineer positions with salary above $150k",
-      timestamp: "2:35 PM",
-    },
-    {
-      type: "ai",
-      content:
-        "Perfect! ✨ I've customized your resume for each role and submitted 3 applications. You should hear back within 48 hours!",
-      timestamp: "2:35 PM",
-    },
   ]
 
   return (
@@ -66,228 +48,19 @@ export default function AIFeaturesSection() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 relative z-10">
-        {/* First Section - Phone Interface and Content Card */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center mb-32">
-          {/* Left Side - Mobile Interface with Human Hand */}
-          <div className="flex justify-center lg:justify-start">
-            <div className="relative">
-              {/* Human Hand Image */}
-              <div className="absolute -right-12 -bottom-8 z-20 transform rotate-12">
-                <img
-                  src="https://images.unsplash.com/photo-1586297135537-94bc9ba060aa?w=150&h=200&fit=crop&crop=hand"
-                  alt="Hand interacting with phone"
-                  className="w-24 h-32 object-cover rounded-2xl shadow-lg"
-                />
-              </div>
+        {/* Section 1: Mobile Experience - Auto Apply & Smart Matching */}
 
-              {/* Phone Mockup */}
-              <div className="w-80 bg-black rounded-[3.5rem] overflow-hidden shadow-2xl relative z-10 border-8 border-gray-800">
-                {/* Phone Notch */}
-                <div className="bg-black px-6 py-3 flex justify-center">
-                  <div className="w-20 h-1.5 bg-gray-600 rounded-full" />
-                </div>
 
-                {/* Status Bar */}
-                 <div className="bg-gray-900 px-4 py-2 flex justify-between items-center text-white text-sm font-medium">
-                        {/* Left side - Time */}
-                        <div className="flex items-center">
-                          <span className="font-semibold">9:41</span>
-                        </div>
-                        
-                        {/* Right side - Status icons */}
-                        <div className="flex items-center space-x-2">
-                          {/* Signal strength */}
-                          <div className="flex items-center space-x-1">
-                            <Signal size={14} className="opacity-90" />
-                            <span className="text-xs opacity-90">5G</span>
-                          </div>
-                          
-                          {/* WiFi */}
-                          <Wifi size={14} className="opacity-90" />
-                          
-                          {/* Battery percentage */}
-                          <div className="flex items-center space-x-1">
-                            <Battery size={14} className="opacity-90" />
-                            <span className="text-xs font-medium">100%</span>
-                          </div>
-                        </div>
-                      </div>
-
-                {/* App Content */}
-                <div className="bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 h-[520px] relative">
-                  <div className="p-6">
-                    {/* Header */}
-                    <div className="flex items-center space-x-4 mb-8">
-                      <div className="relative">
-                        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
-                          <Sparkles className="w-6 h-6 text-white" />
-                        </div>
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-gray-900 animate-pulse"></div>
-                      </div>
-                      <div>
-                        <h2 className="text-white text-xl font-bold">JobBot AI</h2>
-                        <p className="text-gray-400 text-sm flex items-center">
-                          <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
-                          AI Assistant Active
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Chat Messages */}
-                    <div className="space-y-4 mb-6 max-h-60 overflow-y-auto">
-                      {aiMessages.map((msg, index) => (
-                        <div key={index} className={`flex ${msg.type === "user" ? "justify-end" : "justify-start"}`}>
-                          <div className={`max-w-[85%] ${msg.type === "user" ? "order-2" : "order-1"}`}>
-                            <div
-                              className={`p-4 rounded-3xl shadow-lg ${
-                                msg.type === "user"
-                                  ? "bg-gradient-to-r from-blue-500 to-indigo-500 text-white ml-4"
-                                  : "bg-white text-gray-800 mr-4 border border-gray-100"
-                              }`}
-                            >
-                              <p className="text-sm leading-relaxed">{msg.content}</p>
-                              <p className={`text-xs mt-2 ${msg.type === "user" ? "text-blue-100" : "text-gray-500"}`}>
-                                {msg.timestamp}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-
-                      {isTyping && (
-                        <div className="flex justify-start">
-                          <div className="bg-white rounded-3xl p-4 mr-4 shadow-lg border border-gray-100">
-                            <div className="flex space-x-1">
-                              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                              <div
-                                className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                                style={{ animationDelay: "0.1s" }}
-                              ></div>
-                              <div
-                                className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                                style={{ animationDelay: "0.2s" }}
-                              ></div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Quick Actions */}
-                    <div className="space-y-3">
-                      <div className="text-sm text-gray-400 uppercase tracking-wide font-medium">Quick Apply</div>
-                      {jobApplications.slice(0, 2).map((job, index) => (
-                        <div
-                          key={index}
-                          className="bg-gradient-to-r from-gray-800 to-gray-700 rounded-2xl p-4 border border-gray-600 hover:border-blue-400 transition-all cursor-pointer group hover:shadow-lg"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <p className="text-white text-sm font-medium">{job.title}</p>
-                              <p className="text-gray-400 text-xs">
-                                {job.company} • {job.location}
-                              </p>
-                            </div>
-                            <Badge className="bg-green-400/20 text-green-400 border-green-400/30">
-                              {job.match} match
-                            </Badge>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Input Area */}
-                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-gray-900/95 backdrop-blur-sm border-t border-gray-700">
-                    <div className="flex items-center space-x-3">
-                      <Input
-                        type="text"
-                        placeholder="Find remote software jobs $150k+"
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                        className="flex-1 bg-gray-800 border-gray-600 rounded-2xl px-4 py-3 text-white text-sm placeholder-gray-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20"
-                      />
-                      <Button
-                        onClick={handleSendMessage}
-                        className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white p-3 rounded-2xl shadow-lg transition-all duration-200 hover:scale-105"
-                        disabled={!message.trim()}
-                      >
-                        <Send className="w-5 h-5" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Home Indicator */}
-                <div className="bg-black px-6 py-3 flex justify-center">
-                  <div className="w-24 h-1.5 bg-gray-600 rounded-full" />
-                </div>
-              </div>
-
-              {/* Feature Card 1 - Auto Apply */}
-              <div className="absolute -left-12 top-1/4 bg-gray-800/40 backdrop-blur-sm rounded-3xl shadow-2xl p-8 max-w-sm hidden xl:block border border-gray-700 hover:border-gray-600 transition-all duration-300">
-                <div className="flex items-center space-x-4 mb-6">
-                  <img
-                    src="https://images.unsplash.com/photo-1494790108755-2616b612b5bc?w=60&h=60&fit=crop&crop=face"
-                    alt="Happy user Sarah"
-                    className="w-14 h-14 rounded-full object-cover border-2 border-green-400/30"
-                  />
-                  <div>
-                    <h4 className="font-bold text-white">Sarah M.</h4>
-                    <p className="text-sm text-green-400 font-medium">Got 3 interviews in 1 week! 🎉</p>
-                  </div>
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-4">Auto-Apply to Jobs</h3>
-                <p className="text-gray-300 mb-6 leading-relaxed">
-                  Our AI applies to hundreds of relevant jobs automatically, customizing your resume and cover letter
-                  for each position while you sleep.
-                </p>
-                <Button
-                  onClick={() => handleGetStarted("Auto Apply")}
-                  className="bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-gray-900 px-8 py-4 rounded-2xl font-semibold transition-all duration-300 hover:scale-105 w-full shadow-lg"
-                >
-                  Start Auto-Applying
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Side - Content Card */}
-          <div className="relative">
-            {/* Feature Card - Smart Matching */}
-            {/* <div className="bg-gray-800/40 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-gray-700 hover:border-gray-600 transition-all duration-300">
-              <div className="flex items-center space-x-4 mb-6">
-                <img
-                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=70&h=70&fit=crop&crop=face"
-                  alt="Happy professional Mike"
-                  className="w-16 h-16 rounded-full object-cover border-2 border-blue-200"
-                />
-                <div>
-                  <h4 className="font-bold text-white">Mike R.</h4>
-                  <p className="text-sm text-blue-400 font-medium">Landed dream job in 2 weeks! 🚀</p>
-                  <div className="flex items-center mt-1">
-                    <DollarSign className="w-4 h-4 text-green-400 mr-1" />
-                    <span className="text-xs text-green-400 font-medium">$185k salary increase</span>
-                  </div>
-                </div>
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-4">Smart Job Matching</h3>
-              <p className="text-gray-300 mb-6 leading-relaxed">
-                AI analyzes your skills, experience, and preferences to find the perfect job matches. Get personalized
-                recommendations that align with your career goals and salary expectations.
-              </p>
-              <Button
-                onClick={() => handleGetStarted("Smart Matching")}
-                className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-8 py-4 rounded-2xl font-semibold transition-all duration-300 hover:scale-105 w-full shadow-lg"
-              >
-                Find My Perfect Job
-              </Button>
-            </div> */}
-          </div>
+        {/* Section 2: Desktop Experience - Document Creation & AI Assistant */}
+        <div className="text-center mb-16">
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+            Professional Document Creation
+          </h2>
+          <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            Create tailored resumes and cover letters with AI-powered suggestions
+          </p>
         </div>
 
-        {/* Second Section - Desktop Interface */}
         <div className="flex justify-center">
           <div className="w-full max-w-5xl">
             {/* Desktop Interface */}
@@ -380,7 +153,7 @@ export default function AIFeaturesSection() {
                         <span className="text-white font-semibold">Cover Letter - Software Engineer.docx</span>
                       </div>
                       <div className="flex items-center space-x-2 text-xs text-gray-400">
-                        <span className="bg-green-400/20 text-green-400 px-2 py-1 rounded-full">Auto-saved</span>
+                        <span className={`bg-${colors.primary.accent}/20 text-${colors.primary.accent} px-2 py-1 rounded-full`}>Auto-saved</span>
                         <span>•</span>
                         <span>2 min ago</span>
                       </div>
@@ -391,7 +164,7 @@ export default function AIFeaturesSection() {
                       <button className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded-lg transition-colors">
                         Share
                       </button>
-                      <button className="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded-lg transition-colors">
+                      <button className={`px-3 py-1.5 bg-gradient-to-r ${colors.secondary.from} ${colors.secondary.hoverFrom} ${colors.secondary.text} text-xs rounded-lg transition-colors`}>
                         Export PDF
                       </button>
                     </div>
@@ -431,7 +204,7 @@ export default function AIFeaturesSection() {
                       </div>
                       
                       <div className="text-left text-sm text-gray-600">
-                        March 15, 2024
+                        July 15, 2025
                       </div>
                       
                       <div className="text-left text-sm ">
@@ -493,11 +266,11 @@ export default function AIFeaturesSection() {
               <img
                 src="https://images.unsplash.com/photo-1494790108755-2616b612b5bc?w=60&h=60&fit=crop&crop=face"
                 alt="Happy user Sarah"
-                className="w-14 h-14 rounded-full object-cover border-2 border-green-400/30"
+                className={`w-14 h-14 rounded-full object-cover border-2 border-${colors.primary.accentOpacity}`}
               />
               <div>
                 <h4 className="font-bold text-white">Sarah M.</h4>
-                <p className="text-sm text-green-400 font-medium">Got 3 interviews! 🎉</p>
+                <p className={`text-sm text-${colors.primary.accent} font-medium`}>Got 3 interviews! 🎉</p>
               </div>
             </div>
             <h3 className="text-2xl font-bold text-white mb-4">Auto-Apply to Jobs</h3>
@@ -506,7 +279,7 @@ export default function AIFeaturesSection() {
             </p>
             <Button
               onClick={() => handleGetStarted("Auto Apply")}
-              className="bg-gradient-to-r from-green-400 to-green-500 hover:from-green-500 hover:to-green-600 text-gray-900 px-8 py-4 rounded-2xl font-semibold transition-all duration-300 hover:scale-105 w-full shadow-lg"
+              className={`bg-gradient-to-r ${colors.primary.from} ${colors.primary.to} ${colors.primary.hoverFrom} ${colors.primary.hoverTo} ${colors.primary.text} px-8 py-4 rounded-2xl font-semibold transition-all duration-300 hover:scale-105 w-full shadow-lg`}
             >
               Start Auto-Applying
             </Button>

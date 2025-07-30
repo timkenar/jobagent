@@ -13,7 +13,7 @@ import {
   OAuthCallback
 } from './components/auth';
 import { Dashboard } from './components/dashboard';
-import { LogoSpinner, EnhancedChatbot, Header, Footer } from './components/shared';
+import { LogoSpinner, EnhancedChatbot, Header, Footer, CookieConsent } from './components/shared';
 import Emails from './components/email/Email';
 import LandingPage from './components/LandingPage';
 import PlansPage from './components/subscriptions/pages/PlansPage';
@@ -230,6 +230,7 @@ const AppContent = () => {
               </Routes>
             </main>
             <Footer />
+            <CookieConsent />
           </div>
           </Router>
       </SubscriptionProvider>
