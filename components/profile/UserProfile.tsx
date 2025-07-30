@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CVUploadSection } from '../cv';
-import { JobRecommendations } from '../jobs';
+// import { JobRecommendations } from '../jobs';
 import { useSubscription } from '../subscriptions/context/SubscriptionContext';
 import { User, convertToLegacyUser, getProfileCompletionItems } from '../../src/types/user';
 import { useAuth } from '../../src/contexts/AuthContext';
@@ -304,7 +304,7 @@ const UserProfile: React.FC = () => {
       <CVUploadSection />
 
       {/* Job Recommendations */}
-      <JobRecommendations />
+      {/* <JobRecommendations /> */}
 
       {/* Recent Activity */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">

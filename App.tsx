@@ -13,7 +13,7 @@ import {
   OAuthCallback
 } from './components/auth';
 import { Dashboard } from './components/dashboard';
-import { LogoSpinner, EnhancedChatbot } from './components/shared';
+import { LogoSpinner, EnhancedChatbot, Header, Footer } from './components/shared';
 import Emails from './components/email/Email';
 import LandingPage from './components/LandingPage';
 import PlansPage from './components/subscriptions/pages/PlansPage';
@@ -25,7 +25,8 @@ import PricingManagementPage from './components/subscriptions/pages/PricingManag
 import PrivacyPolicy from './components/legal/PrivacyPolicy';
 import TermsOfService from './components/legal/TermsOfService';
 import GoogleVerificationLinks from './components/legal/GoogleVerificationLinks';
-
+import PricingSection from './components/pricing';
+import FeaturesPage from './components/features';
 // Wrapper component to handle landing page navigation
 const LandingPageWrapper = ({ onSignInSuccess }) => {
   const navigate = useNavigate();
@@ -91,7 +92,13 @@ const AppContent = () => {
     <GmailProvider>
       <SubscriptionProvider>
           <Router>
-          <Routes>
+          <div className="min-h-screen flex flex-col">
+            <Header 
+              isSignedIn={isSignedIn} 
+              onSignOut={handleSignOut}
+            />
+            <main className="flex-1">
+              <Routes>
         {/* Email verification route - accessible without being signed in */}
         <Route path="/verify-email" element={<EmailVerificationPage />} />
         
@@ -112,6 +119,14 @@ const AppContent = () => {
             </>
           )
         } />
+
+        {/* Pricing - Public Access */}
+        <Route path="/pricing" element={<PricingSection />} />
+        
+        {/* Features - Public Access */}
+        <Route path="/features" element={<FeaturesPage />} />
+
+        {/* Dashboard route */}
         
         {/* Sign up route */}
         <Route path="/signup" element={
@@ -212,8 +227,11 @@ const AppContent = () => {
               <Dashboard />
               <EnhancedChatbot />
             </>          )} /> 
-        </Routes>
-      </Router>
+              </Routes>
+            </main>
+            <Footer />
+          </div>
+          </Router>
       </SubscriptionProvider>
     </GmailProvider>
   );
