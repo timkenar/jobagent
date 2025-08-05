@@ -60,7 +60,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
           </button>
           
           <div className="flex items-center space-x-2">
-            <PaperAirplaneIcon className="w-6 h-6 text-blue-600" />
+            <PaperAirplaneIcon className="w-6 h-6 text-green-500" />
             <h1 className="text-lg font-semibold">
               {getSectionTitle(activeSection)}
             </h1>
@@ -161,7 +161,7 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
           </div>
           <div className={`w-full bg-gray-300 dark:bg-gray-600 rounded-full h-1.5 mt-1`}>
             <div 
-              className="bg-blue-600 h-1.5 rounded-full transition-all duration-300" 
+              className="bg-green-500 h-1.5 rounded-full transition-all duration-300" 
               style={{ 
                 width: `${(() => {
                   try {

@@ -60,62 +60,44 @@ export const AutomationHistory: React.FC<AutomationHistoryProps> = ({ user }) =>
 
   const fetchApplicationHistory = async () => {
     try {
-      // This would be replaced with actual API call
-      const mockApplications: JobApplication[] = [
-        {
-          id: '1',
-          job_title: 'Senior Software Engineer',
-          company_name: 'TechCorp Inc.',
-          platform: 'linkedin',
-          location: 'New York, NY',
-          application_date: '2024-01-15T10:30:00Z',
-          status: 'applied',
-          job_url: 'https://linkedin.com/jobs/123',
-          automated: true
-        },
-        {
-          id: '2',
-          job_title: 'Frontend Developer',
-          company_name: 'StartupXYZ',
-          platform: 'indeed',
-          location: 'San Francisco, CA',
-          application_date: '2024-01-15T11:45:00Z',
-          status: 'applied',
-          job_url: 'https://indeed.com/jobs/456',
-          automated: true
-        },
-        {
-          id: '3',
-          job_title: 'Full Stack Developer',
-          company_name: 'BigCorp',
-          platform: 'linkedin',
-          location: 'Remote',
-          application_date: '2024-01-15T12:15:00Z',
-          status: 'failed',
-          job_url: 'https://linkedin.com/jobs/789',
-          automated: true,
-          error_message: 'Form submission failed - captcha detected'
-        }
-      ];
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        console.error('No auth token found');
+        setApplications([]);
+        setSessions([]);
+        return;
+      }
 
-      const mockSessions: AutomationSession[] = [
-        {
-          id: '1',
-          date: '2024-01-15T10:00:00Z',
-          query: 'Software Engineer',
-          platforms: ['linkedin', 'indeed'],
-          total_found: 25,
-          applications_sent: 5,
-          success_rate: 80,
-          duration: '15 minutes',
-          applications: mockApplications
-        }
-      ];
+      // Fetch real application history from API
+      const applicationsResponse = await fetch('/api/automation/applications/', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
 
-      setApplications(mockApplications);
-      setSessions(mockSessions);
+      const sessionsResponse = await fetch('/api/automation/sessions/', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (applicationsResponse.ok) {
+        const applicationsData = await applicationsResponse.json();
+        setApplications(applicationsData || []);
+      } else {
+        setApplications([]);
+      }
+
+      if (sessionsResponse.ok) {
+        const sessionsData = await sessionsResponse.json();
+        setSessions(sessionsData || []);
+      } else {
+        setSessions([]);
+      }
     } catch (error) {
       console.error('Error fetching history:', error);
+      setApplications([]);
+      setSessions([]);
     } finally {
       setIsLoading(false);
     }

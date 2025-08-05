@@ -93,10 +93,12 @@ const AppContent = () => {
       <SubscriptionProvider>
           <Router>
           <div className="min-h-screen flex flex-col">
-            <Header 
-              isSignedIn={isSignedIn} 
-              onSignOut={handleSignOut}
-            />
+            {!isSignedIn && (
+              <Header 
+                isSignedIn={isSignedIn} 
+                onSignOut={handleSignOut}
+              />
+            )}
             <main className="flex-1">
               <Routes>
         {/* Email verification route - accessible without being signed in */}
@@ -229,7 +231,7 @@ const AppContent = () => {
             </>          )} /> 
               </Routes>
             </main>
-            <Footer />
+            {!isSignedIn && <Footer />}
             <CookieConsent />
           </div>
           </Router>

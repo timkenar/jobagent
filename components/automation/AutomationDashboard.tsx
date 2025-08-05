@@ -300,28 +300,10 @@ export const AutomationDashboard: React.FC<AutomationDashboardProps> = ({ user }
                 <CardTitle className={`${isDark ? 'text-white' : 'text-gray-900'}`}>Recent Activity</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-3">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <div>
-                      <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>Applied to Software Engineer at TechCorp</p>
-                      <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>2 hours ago</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <div>
-                      <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>Applied to Frontend Developer at StartupXYZ</p>
-                      <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>4 hours ago</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <XCircle className="h-5 w-5 text-red-500" />
-                    <div>
-                      <p className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>Failed to apply to Senior Developer at BigCorp</p>
-                      <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>6 hours ago</p>
-                    </div>
-                  </div>
+                <div className="text-center py-12">
+                  <Bot className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>No automation activity yet</p>
+                  <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-500'} mt-1`}>Start an automation session to see activity here</p>
                 </div>
               </CardContent>
             </Card>

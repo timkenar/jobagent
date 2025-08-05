@@ -137,7 +137,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         ${collapsed && !isMobile ? 'w-16' : 'w-64'}
       `}>
       {/* Logo Section */}
-      <div className="flex items-center justify-between h-16 border-b border-gray-200 bg-gradient-to-r from-blue-600 to-purple-600 flex-shrink-0 px-4">
+      <div className="flex items-center justify-between h-16 border-b border-gray-200 bg-gradient-to-r from-green-500 to-green-600 flex-shrink-0 px-4">
         <div className="flex items-center space-x-3">
           <PaperAirplaneIcon className="w-8 h-8 text-white" />
           {(!collapsed || isMobile) && (
@@ -168,7 +168,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               onClick={() => handleMenuItemClick(item.id)}
               className={`w-full flex items-center px-3 py-3 rounded-xl transition-all duration-200 group ${
                 activeSection === item.id
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
+                  ? 'bg-gradient-to-r from-green-400 to-green-600 text-white shadow-lg'
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
               }`}
             >

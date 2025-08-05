@@ -2,32 +2,10 @@ import axios from 'axios';
 import { API_CONFIG } from '../../src/config/api';
 import { JobInfo, AccountInfo } from './types';
 
+// Removed mock data generation - returns empty array instead
 export const generateMockJobs = (keywords: string): JobInfo[] => {
-  const companies = ['TechCorp', 'StartupInc', 'BigTech', 'DevCompany', 'CodeCorp', 'WebSoft', 'DataTech'];
-  const locations = ['Remote', 'San Francisco', 'New York', 'Austin', 'Seattle', 'Boston', 'Los Angeles'];
-  const jobTitles = [
-    'Senior React Developer',
-    'Frontend Engineer', 
-    'Full Stack Developer',
-    'JavaScript Developer',
-    'UI/UX Developer',
-    'Software Engineer',
-    'Web Developer'
-  ];
-  
-  return Array.from({ length: 5 }, (_, index) => ({
-    id: `mock-${index + 1}`,
-    title: jobTitles[Math.floor(Math.random() * jobTitles.length)],
-    company: companies[Math.floor(Math.random() * companies.length)],
-    location: locations[Math.floor(Math.random() * locations.length)],
-    hasForm: Math.random() > 0.4,
-    url: `https://example.com/jobs/${index + 1}`,
-    salary: `$${60 + Math.floor(Math.random() * 80)}k - $${80 + Math.floor(Math.random() * 100)}k`,
-    description: `Exciting opportunity for a ${jobTitles[Math.floor(Math.random() * jobTitles.length)]} with experience in ${keywords}`,
-    tags: ['Remote', 'Full-time', keywords],
-    jobType: 'Full-time',
-    publicationDate: new Date().toISOString()
-  }));
+  console.warn('Job search failed - returning empty results instead of mock data');
+  return [];
 };
 
 export const searchJobs = async (keywords: string, location: string): Promise<JobInfo[]> => {
@@ -50,11 +28,12 @@ export const searchJobs = async (keywords: string, location: string): Promise<Jo
         publicationDate: job.publication_date
       })) || [];
     } else {
-      return generateMockJobs(keywords);
+      console.error('Job search API failed with status:', response.status);
+      return [];
     }
   } catch (error) {
     console.error('Error searching for jobs:', error);
-    return generateMockJobs(keywords);
+    return [];
   }
 };
 
@@ -208,10 +187,10 @@ export const parseJobFromUrl = async (url: string): Promise<JobInfo> => {
     let jobInfo: JobInfo = {
       id: `direct-${Date.now()}`,
       url: url,
-      title: 'Full Stack Developer',
-      company: 'Unknown Company',
-      location: 'Kenya',
-      salary: 'Competitive',
+      title: 'Position Title Not Available',
+      company: 'Company Name Not Available', 
+      location: 'Location Not Available',
+      salary: 'Salary Not Available',
       hasForm: true,
       description: 'Job details will be extracted from the URL',
       tags: [],
@@ -222,10 +201,10 @@ export const parseJobFromUrl = async (url: string): Promise<JobInfo> => {
     if (domain.includes('brightermonday.co.ke')) {
       jobInfo = {
         ...jobInfo,
-        title: 'Full Stack Developer',
-        company: 'BrighterMonday Employer',
-        location: 'Nairobi, Kenya',
-        salary: 'KSh 80,000 - 120,000',
+        title: 'Position details will be extracted from URL',
+        company: 'Company details will be extracted from URL',
+        location: 'Location details will be extracted from URL',
+        salary: 'Salary details will be extracted from URL',
         platform: 'BrighterMonday'
       };
     } else if (domain.includes('linkedin.com')) {
@@ -256,9 +235,9 @@ export const generateCoverLetter = (job: JobInfo): string => {
   
   return `Dear Hiring Manager,
 
-I am writing to express my strong interest in the ${job.title} position at ${job.company}. With my background in ${user.job_category || 'software development'} and ${user.experience_years || 'several years'} of experience, I believe I would be a valuable addition to your team.
+I am writing to express my strong interest in the ${job.title} position at ${job.company}. ${user.job_category ? `With my background in ${user.job_category}` : 'With my professional background'} ${user.experience_years ? `and ${user.experience_years} of experience` : ''}, I believe I would be a valuable addition to your team.
 
-My skills in ${user.skills || 'various technologies'} align well with the requirements for this role. I am particularly excited about the opportunity to contribute to ${job.company}'s mission and work in ${job.location}.
+${user.skills ? `My skills in ${user.skills}` : 'My professional skills'} align well with the requirements for this role. I am particularly excited about the opportunity to contribute to ${job.company}'s mission${job.location ? ` and work in ${job.location}` : ''}.
 
 Thank you for considering my application. I look forward to hearing from you.
 

@@ -113,7 +113,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onSignIn }) => 
             <span className="inline-block animate-fade-in-delay-2">the</span>{' '}
             <span className="inline-block animate-fade-in-delay-3">Power</span>{' '}
             <span className="inline-block animate-fade-in-delay-4">of</span>{' '}
-            <span className="bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent inline-block animate-fade-in-delay-5">
+            <span className="bg-gradient-to-r from-green-400 to-green-600 bg-clip-text text-transparent inline-block animate-fade-in-delay-5">
               AI
             </span>
           </h1>

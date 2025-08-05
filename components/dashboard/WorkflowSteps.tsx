@@ -519,16 +519,16 @@ const WorkflowUI = () => {
               </div>
             </div>
           ) : (
-            <div className={`p-3 rounded-lg ${darkMode ? 'bg-blue-900' : 'bg-blue-50'} border border-blue-200`}>
+            <div className={`p-3 rounded-lg ${darkMode ? 'bg-green-900' : 'bg-green-50'} border border-green-200`}>
               <div className="flex items-center">
-                <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center mr-3 animate-pulse">
+                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center mr-3 animate-pulse">
                   <span className="text-white text-xs">{completedNodes + 1}</span>
                 </div>
                 <div>
-                  <p className={`text-sm font-medium ${darkMode ? 'text-blue-200' : 'text-blue-800'}`}>
+                  <p className={`text-sm font-medium ${darkMode ? 'text-green-200' : 'text-green-800'}`}>
                     Setup in Progress
                   </p>
-                  <p className={`text-xs ${darkMode ? 'text-blue-300' : 'text-blue-600'}`}>
+                  <p className={`text-xs ${darkMode ? 'text-green-300' : 'text-green-600'}`}>
                     Complete {nodes.length - completedNodes} more step{nodes.length - completedNodes > 1 ? 's' : ''}
                   </p>
                 </div>
@@ -543,14 +543,14 @@ const WorkflowUI = () => {
                   selectedNode === node.id
                     ? darkMode 
                       ? 'bg-gray-700 border border-gray-600' 
-                      : 'bg-blue-50 border border-blue-200'
+                      : 'bg-green-50 border border-green-200'
                     : 'hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`}
                 onClick={() => setSelectedNode(node.id)}
               >
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                   node.status === 'completed' ? 'bg-emerald-500' :
-                  node.status === 'current' ? 'bg-blue-500' :
+                  node.status === 'current' ? 'bg-green-500' :
                   'bg-gray-300 dark:bg-gray-600'
                 }`}>
                   {node.status === 'completed' ? (
@@ -630,12 +630,12 @@ const WorkflowUI = () => {
                 </h3>
                 <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
                   selectedNodeData.status === 'completed' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' :
-                  selectedNodeData.status === 'current' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                  selectedNodeData.status === 'current' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
                   'bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
                 }`}>
                   <div className={`w-2 h-2 rounded-full ${
                     selectedNodeData.status === 'completed' ? 'bg-emerald-500' :
-                    selectedNodeData.status === 'current' ? 'bg-blue-500' :
+                    selectedNodeData.status === 'current' ? 'bg-green-500' :
                     'bg-gray-400'
                   }`} />
                   {selectedNodeData.status}
@@ -645,7 +645,7 @@ const WorkflowUI = () => {
               {selectedNodeData.status === 'current' && (
                 <button 
                   onClick={() => setActiveForm(selectedNodeData.formType)}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors"
+                  className="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg transition-colors"
                 >
                   Configure {selectedNodeData.title}
                 </button>
@@ -739,11 +739,11 @@ const WorkflowUI = () => {
                     <div
                       className={`relative bg-white dark:bg-gray-800 rounded-xl p-4 border-2 transition-all duration-200 ${
                         selectedNode === node.id
-                          ? 'border-blue-500 shadow-lg'
+                          ? 'border-green-500 shadow-lg'
                           : node.status === 'completed'
                           ? 'border-emerald-300 shadow-md'
                           : node.status === 'current'
-                          ? 'border-blue-300 shadow-md'
+                          ? 'border-green-300 shadow-md'
                           : 'border-gray-200 dark:border-gray-700'
                       }`}
                       onClick={() => handleNodeClick(node.id)}
@@ -752,7 +752,7 @@ const WorkflowUI = () => {
                         {/* Node Icon */}
                         <div className={`w-16 h-16 rounded-xl flex items-center justify-center ${
                           node.status === 'completed' ? 'bg-emerald-500' :
-                          node.status === 'current' ? 'bg-blue-500' :
+                          node.status === 'current' ? 'bg-green-500' :
                           'bg-gray-400 dark:bg-gray-500'
                         }`}>
                           {node.status === 'completed' ? (
@@ -772,12 +772,12 @@ const WorkflowUI = () => {
                           </p>
                           <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${
                             node.status === 'completed' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200' :
-                            node.status === 'current' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                            node.status === 'current' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
                             'bg-gray-200 text-gray-800 dark:bg-gray-600 dark:text-gray-200'
                           }`}>
                             <div className={`w-2 h-2 rounded-full ${
                               node.status === 'completed' ? 'bg-emerald-500' :
-                              node.status === 'current' ? 'bg-blue-500' :
+                              node.status === 'current' ? 'bg-green-500' :
                               'bg-gray-400'
                             }`} />
                             {node.status === 'completed' ? 'Completed' :
@@ -796,7 +796,7 @@ const WorkflowUI = () => {
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                               node.status === 'completed'
                                 ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                                : 'bg-blue-600 hover:bg-blue-700 text-white'
+                                : 'bg-green-500 hover:bg-green-600 text-white'
                             }`}
                           >
                             {node.status === 'completed' ? 'View' : 'Configure'}
@@ -869,8 +869,8 @@ const WorkflowUI = () => {
                       className={`absolute w-32 h-32 rounded-2xl cursor-move transition-all duration-200 transform hover:scale-105 ${
                         selectedNode === node.id
                           ? darkMode
-                            ? 'ring-2 ring-blue-400 shadow-2xl shadow-blue-500/20'
-                            : 'ring-2 ring-blue-500 shadow-2xl shadow-blue-500/20'
+                            ? 'ring-2 ring-green-400 shadow-2xl shadow-green-500/20'
+                            : 'ring-2 ring-green-500 shadow-2xl shadow-green-500/20'
                           : 'hover:shadow-xl'
                       } ${
                         node.status === 'completed'
@@ -879,8 +879,8 @@ const WorkflowUI = () => {
                             : 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-2 border-emerald-300'
                           : node.status === 'current'
                           ? darkMode
-                            ? 'bg-gradient-to-br from-blue-800 to-blue-900 border-2 border-blue-600'
-                            : 'bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-300'
+                            ? 'bg-gradient-to-br from-green-800 to-green-900 border-2 border-green-600'
+                            : 'bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-300'
                           : darkMode
                           ? 'bg-gradient-to-br from-gray-700 to-gray-800 border-2 border-gray-600'
                           : 'bg-gradient-to-br from-white to-gray-50 border-2 border-gray-300'
@@ -895,7 +895,7 @@ const WorkflowUI = () => {
                       <div className="h-full flex flex-col items-center justify-center p-4">
                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-2 ${
                           node.status === 'completed' ? 'bg-emerald-500' :
-                          node.status === 'current' ? 'bg-blue-500' :
+                          node.status === 'current' ? 'bg-green-500' :
                           'bg-gray-400 dark:bg-gray-500'
                         }`}>
                           {node.status === 'completed' ? (

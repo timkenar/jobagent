@@ -260,7 +260,7 @@ const JobSearchSection: React.FC<JobSearchSectionProps> = (props) => {
             href={part}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-400 hover:text-blue-300 underline break-all"
+            className="text-green-400 hover:text-green-300 underline break-all"
           >
             {part}
           </a>
@@ -324,7 +324,7 @@ const JobSearchSection: React.FC<JobSearchSectionProps> = (props) => {
               {/* New Chat Button */}
               <button
                 onClick={startNewChat}
-                className="w-full p-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg text-white font-medium flex items-center gap-2 transition-all"
+                className="w-full p-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 rounded-lg text-white font-medium flex items-center gap-2 transition-all"
               >
                 <MessageSquare className="w-4 h-4" />
                 New Chat
@@ -343,7 +343,7 @@ const JobSearchSection: React.FC<JobSearchSectionProps> = (props) => {
                     onClick={() => loadSpecificSession(session.session_id)}
                     className={`w-full p-3 text-left rounded-lg transition-all hover:bg-slate-700 border ${
                       currentSessionId === session.session_id 
-                        ? 'bg-slate-700 border-blue-500' 
+                        ? 'bg-slate-700 border-green-500' 
                         : 'bg-slate-800 border-slate-700'
                     }`}
                   >
@@ -394,7 +394,7 @@ const JobSearchSection: React.FC<JobSearchSectionProps> = (props) => {
             {/* New Chat Button */}
             <button
               onClick={startNewChat}
-              className="w-full p-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg text-white font-medium flex items-center gap-2 transition-all"
+              className="w-full p-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 rounded-lg text-white font-medium flex items-center gap-2 transition-all"
             >
               <MessageSquare className="w-4 h-4" />
               New Chat
@@ -413,7 +413,7 @@ const JobSearchSection: React.FC<JobSearchSectionProps> = (props) => {
                   onClick={() => loadSpecificSession(session.session_id)}
                   className={`w-full p-3 text-left rounded-lg transition-all hover:bg-slate-700 border ${
                     currentSessionId === session.session_id 
-                      ? 'bg-slate-700 border-blue-500' 
+                      ? 'bg-slate-700 border-green-500' 
                       : 'bg-slate-800 border-slate-700'
                   }`}
                 >
@@ -463,8 +463,8 @@ const JobSearchSection: React.FC<JobSearchSectionProps> = (props) => {
               </div>
               {user && (
                 <div className="flex items-center space-x-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                  <span className="text-blue-400 font-medium">Profile Active</span>
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-green-400 font-medium">Profile Active</span>
                 </div>
               )}
             </div>

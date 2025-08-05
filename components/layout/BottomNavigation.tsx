@@ -76,8 +76,8 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({
               flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-200
               ${activeSection === item.id
                 ? darkMode
-                  ? 'text-blue-400 bg-blue-900/20'
-                  : 'text-blue-600 bg-blue-50'
+                  ? 'text-green-400 bg-green-900/20'
+                  : 'text-green-600 bg-green-50'
                 : darkMode
                   ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-800'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'

@@ -94,7 +94,7 @@ const Settings: React.FC = () => {
             <button
               onClick={() => handleNotificationChange('email', !notifications.email)}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                notifications.email ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
+                notifications.email ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-600'
               }`}
             >
               <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -110,7 +110,7 @@ const Settings: React.FC = () => {
             <button
               onClick={() => handleNotificationChange('push', !notifications.push)}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                notifications.push ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
+                notifications.push ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-600'
               }`}
             >
               <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -153,7 +153,7 @@ const Settings: React.FC = () => {
             <button
               onClick={() => handlePreferenceChange('autoApply', !preferences.autoApply)}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                preferences.autoApply ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-600'
+                preferences.autoApply ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-600'
               }`}
             >
               <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -167,7 +167,7 @@ const Settings: React.FC = () => {
               type="number"
               value={preferences.dailyLimit}
               onChange={(e) => handlePreferenceChange('dailyLimit', parseInt(e.target.value))}
-              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500"
               min="1"
               max="50"
             />
@@ -321,7 +321,7 @@ const Dashboard: React.FC = () => {
       case 'applications':
         return <ApplicationTracker />;
       case 'automation':
-        return <AutomationDashboard user={{ id: 1, email: 'user@example.com' }} />;
+        return <AutomationDashboard user={user ? { id: user.uid || 1, email: user.email || '' } : { id: 1, email: '' }} />;
       case 'emails':
         return <EmailManagement />;
       case 'profile':
@@ -383,7 +383,7 @@ const Dashboard: React.FC = () => {
                     {getEmail()}
                   </div>
                 </div>
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center">
                   <span className="text-white text-sm font-medium">
                     {getInitials()}
                   </span>

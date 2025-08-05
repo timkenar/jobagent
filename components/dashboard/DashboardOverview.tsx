@@ -170,8 +170,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveSection 
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 00-2 2H8a2 2 0 00-2-2V6m8 0h2a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h2" />
             </svg>
           }
-          color="bg-blue-500"
-          trend={{ value: 15, isPositive: true }}
+          color="bg-green-500"
         />
         
         <StatCard
@@ -183,7 +182,6 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveSection 
             </svg>
           }
           color="bg-green-500"
-          trend={{ value: 25, isPositive: true }}
         />
         
         <StatCard
@@ -194,8 +192,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveSection 
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
           }
-          color="bg-purple-500"
-          trend={{ value: 8, isPositive: true }}
+          color="bg-green-500"
         />
         
         <StatCard
@@ -213,42 +210,12 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveSection 
       {/* Recent Activity */}
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Recent Activity</h2>
-        <div className="space-y-4">
-          <div className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <div className="bg-blue-500 text-white p-2 rounded-full mr-3">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900 dark:text-white">Applied to Software Engineer at TechCorp</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">2 hours ago</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <div className="bg-green-500 text-white p-2 rounded-full mr-3">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900 dark:text-white">Received reply from StartupXYZ</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">5 hours ago</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <div className="bg-purple-500 text-white p-2 rounded-full mr-3">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900 dark:text-white">Completed job search for React Developer positions</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">1 day ago</p>
-            </div>
-          </div>
+        <div className="text-center py-12">
+          <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+          </svg>
+          <p className="text-gray-600 dark:text-gray-400">No recent activity yet</p>
+          <p className="text-sm text-gray-500 dark:text-gray-500 mt-1">Start using the job search features to see your activity here</p>
         </div>
       </div>
 
@@ -265,7 +232,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveSection 
               </svg>
             }
             onClick={() => setActiveSection && setActiveSection('jobsearch')}
-            color="bg-gradient-to-r from-blue-500 to-blue-600"
+            color="bg-gradient-to-r from-green-500 to-green-600"
           />
           
           <QuickAction
@@ -289,7 +256,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ setActiveSection 
               </svg>
             }
             onClick={() => setActiveSection && setActiveSection('emails')}
-            color="bg-gradient-to-r from-purple-500 to-purple-600"
+            color="bg-gradient-to-r from-green-500 to-green-600"
           />
           
           <QuickAction
