@@ -8,7 +8,7 @@ const OAuthDebug: React.FC = () => {
   const fetchDebug = async () => {
     setError('');
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('authToken');
       const res = await axios.get('/api/email-accounts/oauth-init/?provider=gmail', {
         headers: { Authorization: `Bearer ${token}` },
       });

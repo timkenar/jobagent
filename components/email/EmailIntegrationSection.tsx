@@ -107,9 +107,11 @@ const EmailIntegrationSection: React.FC = () => {
           // Persist connection status
           localStorage.setItem('email_connected', 'true');
           localStorage.setItem('email_connection_time', new Date().toISOString());
+          localStorage.removeItem('gmail_oauth_in_progress');
         }).catch(() => {
           setError('Failed to refresh accounts after connection');
           setConnecting(false);
+          localStorage.removeItem('gmail_oauth_in_progress');
         });
         
         // Clear success message after 5 seconds
@@ -119,9 +121,12 @@ const EmailIntegrationSection: React.FC = () => {
       // Handle OAuth errors from popup
       else if (event.data?.type === 'gmail_oauth_error') {
         console.error('OAuth error received from popup:', event.data.error);
-        setError(`Gmail authentication failed: ${event.data.error}`);
+        setError(`Gmail connection failed: ${event.data.error}`);
         setConnecting(false);
         setConnectionProgress(0);
+        
+        // Clear any connection progress
+        localStorage.removeItem('gmail_oauth_in_progress');
       }
     }
     
@@ -135,11 +140,16 @@ const EmailIntegrationSection: React.FC = () => {
     setSuccessMessage('');
     setConnecting(true);
     setConnectionProgress(0);
+    
+    // Mark OAuth in progress
+    localStorage.setItem('gmail_oauth_in_progress', 'true');
+    
     try {
       const token = localStorage.getItem('authToken');
       if (!token) {
-        setError('Please sign in to connect your email accounts.');
+        setError('Please sign in to your account first before connecting email providers.');
         setConnecting(false);
+        localStorage.removeItem('gmail_oauth_in_progress');
         return;
       }
       
@@ -160,21 +170,36 @@ const EmailIntegrationSection: React.FC = () => {
         setConnecting(false);
         return;
       }
-      // Open popup window
+      // Open popup window for Gmail OAuth only
       const width = 500;
       const height = 600;
       const left = window.screenX + (window.outerWidth - width) / 2;
       const top = window.screenY + (window.outerHeight - height) / 2;
       const popup = window.open(
         oauthUrl,
-        'oauthPopup',
-        `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`
+        `${provider}_oauth_popup`,
+        `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes,toolbar=no,menubar=no,location=no,status=no`
       );
       if (!popup) {
         setError('Popup was blocked. Please allow popups for this site and try again.');
         setConnecting(false);
+        localStorage.removeItem('gmail_oauth_in_progress');
         return;
       }
+      
+      // Monitor popup closure
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkClosed);
+          if (localStorage.getItem('gmail_oauth_in_progress')) {
+            // User closed popup without completing OAuth
+            setConnecting(false);
+            setConnectionProgress(0);
+            setError('Gmail connection was cancelled.');
+            localStorage.removeItem('gmail_oauth_in_progress');
+          }
+        }
+      }, 1000);
       
       setConnectionProgress(60); // Waiting for user authorization
       // No polling needed; postMessage will handle the code
@@ -186,10 +211,11 @@ const EmailIntegrationSection: React.FC = () => {
         setError(
           err.response?.data?.error || 
           err.response?.data?.message || 
-          'Failed to initiate authentication. Please check your connection and try again.'
+          'Failed to initiate Gmail connection. Please check your connection and try again.'
         );
       }
       setConnecting(false);
+      localStorage.removeItem('gmail_oauth_in_progress');
     }
   };
 

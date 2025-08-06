@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { JobPosting, GeneratedEmail } from '../../types'; // Assuming types.ts is in the same directory
-import { searchOnlineJobs, searchJobsWithCV, generateTailoredEmail, signOutUser, checkBackendStatus, checkCVStatus } from '../../services/geminiService';
+import { searchOnlineJobs, searchJobsWithCV, generateTailoredEmail, signOutUser, checkCVStatus } from '../../services/geminiService';
 import { DEFAULT_EMAIL_TEMPLATE } from '../constants/emailTemplate'; // Assuming emailTemplate.ts is in constants directory
 
 // Debounce utility
@@ -80,7 +80,8 @@ export const useJobSearch = (): JobSearchState & JobSearchActions => {
   const [cvInfo, setCvInfo] = useState<any | null>(null); // Initialize CV info state
 
   useEffect(() => {
-    checkBackendStatus().then(setIsBackendAvailable);
+    // Set backend as available by default - frontend loads independently
+    setIsBackendAvailable(true);
     if (authToken) {
       refreshCVStatus();
     }

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { PaperAirplaneIcon } from '../shared/icons';
 import ThemeToggle from '../shared/ThemeToggle';
+import { useAuth } from '../../src/contexts/AuthContext';
 
 interface SidebarProps {
   activeSection: string;
@@ -25,6 +26,21 @@ const Sidebar: React.FC<SidebarProps> = ({
   sidebarOpen = false,
   setSidebarOpen
 }) => {
+  const { getDisplayName, getInitials } = useAuth();
+  const [showProfilePopup, setShowProfilePopup] = useState(false);
+  const profilePopupRef = useRef<HTMLDivElement>(null);
+
+  // Close popup when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profilePopupRef.current && !profilePopupRef.current.contains(event.target as Node)) {
+        setShowProfilePopup(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
   const menuItems = [
     {
       id: 'dashboard',
@@ -86,17 +102,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       ),
       description: 'Automated job applications'
     },
-   
-    {
-      id: 'profile',
-      label: 'Profile',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
-      ),
-      description: 'Profile & CV upload'
-    },
     {
       id: 'settings',
       label: 'Settings',
@@ -137,7 +142,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         ${collapsed && !isMobile ? 'w-16' : 'w-64'}
       `}>
       {/* Logo Section */}
-      <div className="flex items-center justify-between h-16 border-b border-gray-200 bg-gradient-to-r from-green-500 to-green-600 flex-shrink-0 px-4">
+      <div className="flex items-center justify-between h-16 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-green-500 to-green-600 flex-shrink-0 px-4">
         <div className="flex items-center space-x-3">
           <PaperAirplaneIcon className="w-8 h-8 text-white" />
           {(!collapsed || isMobile) && (
@@ -147,16 +152,38 @@ const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
         </div>
-        {isMobile && (
-          <button
-            onClick={() => setSidebarOpen && setSidebarOpen(false)}
-            className="text-white hover:text-gray-200 p-1"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        )}
+        <div className="flex items-center space-x-2">
+          {/* Desktop Collapse Toggle */}
+          {!isMobile && (
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className="text-white hover:text-gray-200 p-1 rounded transition-colors"
+              title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+              <svg 
+                className={`w-5 h-5 transition-transform duration-200 ${
+                  collapsed ? 'rotate-180' : ''
+                }`} 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+          {/* Mobile Close Button */}
+          {isMobile && (
+            <button
+              onClick={() => setSidebarOpen && setSidebarOpen(false)}
+              className="text-white hover:text-gray-200 p-1"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Navigation Menu */}
@@ -166,7 +193,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             <button
               key={item.id}
               onClick={() => handleMenuItemClick(item.id)}
-              className={`w-full flex items-center px-3 py-3 rounded-xl transition-all duration-200 group ${
+              className={`w-full flex items-center px-3 py-3 rounded-xl transition-all duration-200 group relative ${
                 activeSection === item.id
                   ? 'bg-gradient-to-r from-green-400 to-green-600 text-white shadow-lg'
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
@@ -187,54 +214,129 @@ const Sidebar: React.FC<SidebarProps> = ({
                   </div>
                 </div>
               )}
+              {/* Tooltip for collapsed mode */}
+              {collapsed && !isMobile && (
+                <div className="absolute left-full ml-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                  <div className="font-medium">{item.label}</div>
+                  <div className="text-xs text-gray-300">{item.description}</div>
+                </div>
+              )}
             </button>
           ))}
         </div>
       </nav>
 
       {/* Bottom Section */}
-      <div className="flex-shrink-0 p-3 border-t border-gray-200 bg-white dark:bg-gray-800">
-        <button
-          onClick={() => {
-            if (isSigningOut) return;
-            const confirmed = window.confirm('Are you sure you want to sign out?');
-            if (confirmed) {
-              onSignOut();
-            }
-          }}
-          disabled={isSigningOut}
-          className={`w-full flex items-center px-3 py-3 rounded-xl transition-all duration-200 group ${
-            isSigningOut
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-              : 'text-gray-600 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400'
-          }`}
-        >
-          <div className="flex-shrink-0">
-            {isSigningOut ? (
-              <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-            ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-            )}
-          </div>
-          {(!collapsed || isMobile) && (
-            <div className="ml-3 text-left">
-              <div className="text-sm font-medium">
-                {isSigningOut ? 'Signing Out...' : 'Sign Out'}
-              </div>
-              <div className="text-xs text-gray-400 dark:text-gray-500">
-                {isSigningOut ? 'Please wait...' : 'Exit application'}
+      <div className="flex-shrink-0 p-3 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 relative">
+        {/* Profile Button */}
+        <div className="relative" ref={profilePopupRef}>
+          <button
+            onClick={() => setShowProfilePopup(!showProfilePopup)}
+            className="w-full flex items-center px-3 py-3 rounded-xl transition-all duration-200 group text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white mb-2"
+          >
+            <div className="flex-shrink-0">
+              <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-medium">
+                  {getInitials()}
+                </span>
               </div>
             </div>
+            {(!collapsed || isMobile) && (
+              <div className="ml-3 text-left flex-1">
+                <div className="text-sm font-medium">
+                  {getDisplayName()}
+                </div>
+                <div className="text-xs text-gray-400 dark:text-gray-500">
+                  View profile options
+                </div>
+              </div>
+            )}
+            {(!collapsed || isMobile) && (
+              <div className="flex-shrink-0">
+                <svg className={`w-4 h-4 transition-transform duration-200 ${
+                  showProfilePopup ? 'rotate-180' : ''
+                }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            )}
+            {/* Tooltip for collapsed mode */}
+            {collapsed && !isMobile && (
+              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                {getDisplayName()}
+              </div>
+            )}
+          </button>
+
+          {/* Profile Popup */}
+          {showProfilePopup && (
+            <div className={`absolute bottom-full mb-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg py-2 z-50 ${
+              collapsed && !isMobile 
+                ? 'left-full ml-2 w-64' 
+                : 'left-0 right-0'
+            }`}>
+              <button
+                onClick={() => {
+                  setActiveSection('profile');
+                  setShowProfilePopup(false);
+                  if (isMobile && setSidebarOpen) {
+                    setSidebarOpen(false);
+                  }
+                }}
+                className="w-full flex items-center px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+              >
+                <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <div>
+                  <div className="text-sm font-medium">Go to Profile</div>
+                  <div className="text-xs text-gray-400 dark:text-gray-500">Manage your information</div>
+                </div>
+              </button>
+              <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+              <button
+                onClick={() => {
+                  if (isSigningOut) return;
+                  const confirmed = window.confirm('Are you sure you want to sign out?');
+                  if (confirmed) {
+                    onSignOut();
+                  }
+                  setShowProfilePopup(false);
+                }}
+                disabled={isSigningOut}
+                className={`w-full flex items-center px-4 py-3 text-left transition-colors ${
+                  isSigningOut
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-600 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400'
+                }`}
+              >
+                <div className="flex-shrink-0 mr-3">
+                  {isSigningOut ? (
+                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                  )}
+                </div>
+                <div>
+                  <div className="text-sm font-medium">
+                    {isSigningOut ? 'Signing Out...' : 'Sign Out'}
+                  </div>
+                  <div className="text-xs text-gray-400 dark:text-gray-500">
+                    {isSigningOut ? 'Please wait...' : 'Exit application'}
+                  </div>
+                </div>
+              </button>
+            </div>
           )}
-        </button>
+        </div>
 
         {(!collapsed || isMobile) && (
-          <div className="mt-4 px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <div className="mt-2 px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
             <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
               JobAssist v1.0
             </div>

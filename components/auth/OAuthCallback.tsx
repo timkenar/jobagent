@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { LoadingSpinner } from '../shared';
 import { API_CONFIG } from '../../src/config/api';
+import { handleLinkedInOAuthCallback } from '../../services/geminiService';
 
 const OAuthCallback: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -33,12 +34,62 @@ const OAuthCallback: React.FC = () => {
           return;
         }
 
-        // Get the auth token from localStorage
+        // Check if this is LinkedIn OAuth (state parameter will contain linkedin info)
+        const isLinkedInOAuth = state && localStorage.getItem('linkedin_oauth_state') === state;
+        
+        if (isLinkedInOAuth) {
+          // Handle LinkedIn OAuth
+          setMessage('Signing in with LinkedIn...');
+          
+          try {
+            const result = await handleLinkedInOAuthCallback(code, state);
+            
+            if (result.success && result.token && result.user) {
+              // Store auth data
+              localStorage.setItem('authToken', result.token);
+              localStorage.setItem('user', JSON.stringify(result.user));
+              
+              setStatus('success');
+              setMessage('LinkedIn sign-in successful!');
+              
+              // Trigger sign-in success event
+              window.dispatchEvent(new CustomEvent('userLoggedIn', { 
+                detail: { token: result.token, user: result.user } 
+              }));
+              
+              // Redirect to dashboard
+              setTimeout(() => {
+                navigate('/');
+              }, 1500);
+            } else {
+              setStatus('error');
+              setMessage(result.message || 'LinkedIn sign-in failed');
+            }
+          } catch (error) {
+            console.error('LinkedIn OAuth error:', error);
+            setStatus('error');
+            setMessage(error instanceof Error ? error.message : 'LinkedIn sign-in failed');
+          }
+          return;
+        }
+
+        // Handle Gmail OAuth (existing logic)
         const authToken = localStorage.getItem('authToken');
         if (!authToken) {
-          setStatus('error');
-          setMessage('Please sign in to connect your email account');
-          return;
+          // Check if this is a popup window for Gmail OAuth
+          if (window.opener) {
+            // Notify parent window of authentication requirement
+            window.opener.postMessage({
+              type: 'gmail_oauth_error',
+              error: 'Authentication required. Please sign in to the main application first.'
+            }, '*');
+            window.close();
+            return;
+          } else {
+            setStatus('error');
+            setMessage('Please sign in to the main application first, then try connecting your Gmail account.');
+            return;
+          }
         }
 
         setMessage('Connecting your Gmail account...');
@@ -65,12 +116,16 @@ const OAuthCallback: React.FC = () => {
           
           // Close popup if this is a popup window
           if (window.opener) {
-            console.log('Notifying parent window of success');
+            console.log('Notifying parent window of Gmail connection success');
             window.opener.postMessage({
               type: 'gmail_oauth_success',
-              email: result.email
+              email: result.email,
+              provider: 'gmail'
             }, '*');
-            window.close();
+            // Small delay to ensure message is received before closing
+            setTimeout(() => {
+              window.close();
+            }, 500);
           } else {
             // If not a popup, redirect to dashboard after a delay
             setTimeout(() => {
@@ -79,7 +134,16 @@ const OAuthCallback: React.FC = () => {
           }
         } else {
           setStatus('error');
-          setMessage(result.error || 'Failed to connect Gmail account');
+          const errorMessage = result.error || 'Failed to connect Gmail account';
+          setMessage(errorMessage);
+          
+          // If this is a popup, notify parent of error
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'gmail_oauth_error',
+              error: errorMessage
+            }, '*');
+          }
         }
 
       } catch (error) {
@@ -132,8 +196,8 @@ const OAuthCallback: React.FC = () => {
         {getIcon()}
         
         <h1 className="text-2xl font-bold text-gray-900 mb-4">
-          {status === 'processing' && 'Connecting Gmail...'}
-          {status === 'success' && 'Gmail Connected!'}
+          {status === 'processing' && 'Processing...'}
+          {status === 'success' && 'Success!'}
           {status === 'error' && 'Connection Failed'}
         </h1>
         

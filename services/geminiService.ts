@@ -54,6 +54,7 @@ declare global {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+const LINKEDIN_CLIENT_ID = import.meta.env.VITE_LINKEDIN_CLIENT_ID;
 
 interface AuthResponse {
   success: boolean;
@@ -176,6 +177,35 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return data as T;
 }
 
+
+export const initializeLinkedInSignIn = async (): Promise<void> => {
+  if (!LINKEDIN_CLIENT_ID) {
+    throw new Error('LinkedIn Client ID is not configured');
+  }
+  
+  // LinkedIn OAuth URL - force correct development URL
+  const redirectUri = window.location.hostname === 'localhost'
+    ? 'http://localhost:5174/oauth-callback'
+    : `${window.location.origin}/oauth-callback`;
+  const scope = 'openid profile email';
+  const state = crypto.randomUUID(); // Generate random state for security
+  
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: LINKEDIN_CLIENT_ID,
+    redirect_uri: redirectUri,
+    scope: scope,
+    state: state
+  });
+  
+  // Store state in localStorage for verification
+  localStorage.setItem('linkedin_oauth_state', state);
+  
+  const linkedinOAuthUrl = `https://www.linkedin.com/oauth/v2/authorization?${params}`;
+  
+  // Open LinkedIn OAuth in a popup or redirect
+  window.location.href = linkedinOAuthUrl;
+};
 
 export const initializeGoogleSignIn = async (buttonText: string): Promise<void> => {
   return new Promise((resolve, reject) => {
@@ -416,6 +446,68 @@ export const generateTailoredEmail = async (
   }
 };
 
+export const handleLinkedInOAuthCallback = async (code: string, state: string): Promise<AuthResponse> => {
+  try {
+    // Verify state to prevent CSRF attacks
+    const storedState = localStorage.getItem('linkedin_oauth_state');
+    if (!storedState || storedState !== state) {
+      throw new Error('Invalid OAuth state parameter');
+    }
+    
+    // Clear stored state
+    localStorage.removeItem('linkedin_oauth_state');
+    
+    // Exchange authorization code for access token
+    const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code,
+        client_id: LINKEDIN_CLIENT_ID!,
+        client_secret: import.meta.env.VITE_LINKEDIN_CLIENT_SECRET || '',
+        redirect_uri: window.location.hostname === 'localhost'
+          ? 'http://localhost:5174/oauth-callback'
+          : `${window.location.origin}/oauth-callback`,
+      }),
+    });
+    
+    if (!tokenResponse.ok) {
+      throw new Error('Failed to exchange authorization code for access token');
+    }
+    
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.access_token;
+    
+    if (!accessToken) {
+      throw new Error('No access token received from LinkedIn');
+    }
+    
+    // Use the access token to authenticate with our backend
+    return await signInWithLinkedIn(accessToken);
+  } catch (error) {
+    throw error;
+  }
+};
+
+export const signInWithLinkedIn = async (accessToken: string): Promise<AuthResponse> => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/linkedin/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ access_token: accessToken }),
+    });
+    return await handleResponse<AuthResponse>(response);
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Backend health check function - optional, no longer blocks frontend loading
 export const checkBackendStatus = async (): Promise<boolean> => {
   try {
     const response = await fetch(`${API_BASE_URL}/health/`);
