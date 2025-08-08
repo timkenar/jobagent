@@ -45,6 +45,7 @@ export const API_ENDPOINTS = {
     SEARCH: '/api/jobs/search/',
     APPLICATIONS: '/api/job-applications/',
     MATCHES: '/api/job-matches/',
+    SCRAPER: '/api/scraper/jobs/', // ReliefWeb job scraper
   },
   
   // CV

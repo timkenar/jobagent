@@ -3,7 +3,7 @@ import { ResponsiveLayout } from '../layout';
 import WorkflowSteps from './WorkflowSteps';
 import DashboardOverview from './DashboardOverview';
 import { UserProfile } from '../profile';
-import { JobApplicationDashboard, ApplicationTracker } from '../jobs';
+import { JobApplicationDashboard, ApplicationTracker, SelfApply } from '../jobs';
 import { useJobSearch } from '../../src/hooks/useJobSearch';
 import { useAuth } from '../../src/contexts/AuthContext';
 import EnhancedChatbot from '../../components/shared/EnhancedChatbot';
@@ -318,6 +318,8 @@ const Dashboard: React.FC = () => {
           isEmailSending={isEmailSending}
           emailSentMessage={emailSentMessage}
         />;
+      case 'selfapply':
+        return <SelfApply />;
       case 'applications':
         return <ApplicationTracker />;
       case 'automation':
@@ -343,6 +345,8 @@ const Dashboard: React.FC = () => {
         return 'Setup Workflow';
       case 'jobsearch':
         return 'AI Job Search';
+      case 'selfapply':
+        return 'Self Apply';
       case 'applications':
         return 'Application Tracker';
       case 'automation':

@@ -11,6 +11,7 @@ export { Textarea } from './textarea';
 export { Label } from './label';
 export { Select } from './select';
 export { Alert } from './alert';
+export { MultiSelect } from './multi-select';
 
 // Backward compatibility
 export { default as LoadingSpinner } from './logospinner';

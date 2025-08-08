@@ -5,3 +5,4 @@ export { default as JobApplicationDashboard } from './JobApplicationDashboard';
 export { default as JobRecommendations } from './JobRecommendations';
 export { default as AddApplicationForm } from './AddApplicationForm';
 export { default as ApplicationTracker } from './ApplicationTracker';
+export { default as SelfApply } from './SelfApply';
