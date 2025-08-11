@@ -371,93 +371,219 @@ const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onSignIn }) => 
           
 
           {/* Features Section */}
+          {/* Features Section */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-20">
             <div className="text-center mb-12">
               <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
-                Powerful Features to Accelerate Your Career
+                Features Comparison
               </h2>
-              <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-                Our AI-powered platform provides everything you need to find and land your dream job faster than ever before.
-              </p>
-            </div>
-
-            {/* Features Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* AI-Powered Matching */}
-              <div className="text-center bg-gray-800/40 backdrop-blur-sm rounded-3xl p-8 border border-gray-700 hover:border-gray-600 transition-all duration-300 hover:shadow-xl group">
-                <div className="w-16 h-16 bg-green-500/20 rounded-2xl flex items-center justify-center mb-6 mx-auto group-hover:scale-110 transition-transform">
-                  <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-white mb-4">AI-Powered Matching</h3>
-                <p className="text-gray-400 text-sm mb-6 leading-relaxed">
-                  Get personalized job recommendations based on your skills, experience, and career aspirations using advanced AI algorithms.
-                </p>
-                <button
-                  onClick={onGetStarted}
-                  className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-3xl font-medium transition-all duration-300 hover:scale-105 text-sm w-full shadow-lg hover:shadow-xl"
-                >
-                  Try AI Matching
-                </button>
               </div>
 
-              {/* Automated Applications */}
-              <div className="text-center bg-gray-800/40 backdrop-blur-sm rounded-3xl p-8 border border-gray-700 hover:border-gray-600 transition-all duration-300 hover:shadow-xl group">
-                <div className="w-16 h-16 bg-green-500/20 rounded-2xl flex items-center justify-center mb-6 mx-auto group-hover:scale-110 transition-transform">
-                  <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-white mb-4">Automated Applications</h3>
-                <p className="text-gray-400 text-sm mb-6 leading-relaxed">
-                  Save time with intelligent application automation and personalized cover letters tailored to each position.
-                </p>
-                <button
-                  onClick={onGetStarted}
-                  className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-3xl font-medium transition-all duration-300 hover:scale-105 text-sm w-full shadow-lg hover:shadow-xl"
-                >
-                  Automate Applications
-                </button>
+            {/* Features Comparison Table */}
+            <div className="bg-gray-800/40 backdrop-blur-sm rounded-3xl border border-gray-700 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  {/* Table Header */}
+                  <thead className="bg-gray-900/60">
+                    <tr>
+                      <th className="text-left p-6 text-white font-bold text-lg">Features</th>
+                      <th className="text-center p-6">
+                        <div className="flex flex-col items-center">
+                          <span className="text-green-400 font-bold text-xl mb-1">AIJobAgent</span>
+                          <span className="text-xs text-gray-400">*</span>
+                        </div>
+                      </th>
+                      <th className="text-center p-6 text-white font-bold text-lg">Other Tools</th>
+                    </tr>
+                  </thead>
+                  
+                  {/* Table Body */}
+                  <tbody className="divide-y divide-gray-700">
+                    {/* AI Resume Builder */}
+                    <tr className="hover:bg-gray-700/20 transition-colors">
+                      <td className="p-6 text-white font-medium">
+                        <span className="text-lg">AI Resume Builder</span> and Editor
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="flex items-center justify-center">
+                          <svg className="w-6 h-6 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span className="text-green-400 font-medium">Yes</span>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="flex items-center justify-center">
+                          <svg className="w-6 h-6 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span className="text-green-400 font-medium">Yes</span>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* LinkedIn Profile to Resume */}
+                    <tr className="hover:bg-gray-700/20 transition-colors">
+                      <td className="p-6 text-white font-medium">
+                        LinkedIn <span className="text-lg">Profile to Resume</span>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="flex items-center justify-center">
+                          <svg className="w-6 h-6 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span className="text-green-400 font-medium">Yes</span>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="flex items-center justify-center">
+                          <span className="w-6 h-0.5 bg-gray-500 mr-2"></span>
+                          <span className="text-gray-400 font-medium">Some</span>
+                          <span className="text-xs text-gray-500 ml-1">*</span>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* ATS Compliant Resumes */}
+                    <tr className="hover:bg-gray-700/20 transition-colors">
+                      <td className="p-6 text-white font-medium">
+                        <span className="text-lg">ATS Compliant Resumes</span>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="flex items-center justify-center">
+                          <svg className="w-6 h-6 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span className="text-green-400 font-medium">All</span>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="flex items-center justify-center">
+                          <span className="w-6 h-0.5 bg-gray-500 mr-2"></span>
+                          <span className="text-gray-400 font-medium">Some</span>
+                          <span className="text-xs text-gray-500 ml-1">*</span>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* Cover Letter Generator */}
+                    <tr className="hover:bg-gray-700/20 transition-colors">
+                      <td className="p-6 text-white font-medium">
+                        <span className="text-lg">Cover Letter</span> Generator
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="flex items-center justify-center">
+                          <svg className="w-6 h-6 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span className="text-green-400 font-medium">Yes</span>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="flex items-center justify-center">
+                          <span className="w-6 h-0.5 bg-gray-500 mr-2"></span>
+                          <span className="text-gray-400 font-medium">Some</span>
+                          <span className="text-xs text-gray-500 ml-1">*</span>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* Curated Jobs Feed */}
+                    <tr className="hover:bg-gray-700/20 transition-colors">
+                      <td className="p-6 text-white font-medium">
+                        + Curated <span className="text-lg">Jobs Feed</span>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="flex items-center justify-center">
+                          <svg className="w-6 h-6 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span className="text-green-400 font-medium">Yes</span>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="flex items-center justify-center">
+                          <svg className="w-6 h-6 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          <span className="text-red-400 font-medium">No</span>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* Automatically Apply to Jobs */}
+                    <tr className="hover:bg-gray-700/20 transition-colors">
+                      <td className="p-6 text-white font-medium">
+                        + Automatically <span className="text-lg">Apply to Jobs</span>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="flex items-center justify-center">
+                          <svg className="w-6 h-6 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span className="text-green-400 font-medium">Yes</span>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="flex items-center justify-center">
+                          <svg className="w-6 h-6 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          <span className="text-red-400 font-medium">No</span>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* Interview Answers Extension */}
+                    <tr className="hover:bg-gray-700/20 transition-colors">
+                      <td className="p-6 text-white font-medium">
+                        + <span className="text-lg">Interview Answers</span> Extension
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="flex items-center justify-center">
+                          <svg className="w-6 h-6 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span className="text-green-400 font-medium">Yes</span>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="flex items-center justify-center">
+                          <svg className="w-6 h-6 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          <span className="text-red-400 font-medium">No</span>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* Mock Interview Prep */}
+                    <tr className="hover:bg-gray-700/20 transition-colors">
+                      <td className="p-6 text-white font-medium">
+                        + <span className="text-lg">Mock Interview</span> Prep
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="flex items-center justify-center">
+                          <svg className="w-6 h-6 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <span className="text-green-400 font-medium">Yes</span>
+                        </div>
+                      </td>
+                      <td className="p-6 text-center">
+                        <div className="flex items-center justify-center">
+                          <svg className="w-6 h-6 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          <span className="text-red-400 font-medium">No</span>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
 
-              {/* Smart Analytics */}
-              <div className="text-center bg-gray-800/40 backdrop-blur-sm rounded-3xl p-8 border border-gray-700 hover:border-gray-600 transition-all duration-300 hover:shadow-xl group">
-                <div className="w-16 h-16 bg-green-500/20 rounded-2xl flex items-center justify-center mb-6 mx-auto group-hover:scale-110 transition-transform">
-                  <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-white mb-4">Smart Analytics</h3>
-                <p className="text-gray-400 text-sm mb-6 leading-relaxed">
-                  Track your application progress and get insights to improve your success rate with detailed performance metrics.
-                </p>
-                <button
-                  onClick={onGetStarted}
-                  className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-3xl font-medium transition-all duration-300 hover:scale-105 text-sm w-full shadow-lg hover:shadow-xl"
-                >
-                  View Analytics
-                </button>
-              </div>
-
-              {/* 24/7 Support */}
-              <div className="text-center bg-gray-800/40 backdrop-blur-sm rounded-3xl p-8 border border-gray-700 hover:border-gray-600 transition-all duration-300 hover:shadow-xl group">
-                <div className="w-16 h-16 bg-green-500/20 rounded-2xl flex items-center justify-center mb-6 mx-auto group-hover:scale-110 transition-transform">
-                  <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold text-white mb-4">24/7 AI Support</h3>
-                <p className="text-gray-400 text-sm mb-6 leading-relaxed">
-                  Get instant answers to your career questions with our AI assistant available around the clock for guidance.
-                </p>
-                <button
-                  onClick={onGetStarted}
-                  className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-3xl font-medium transition-all duration-300 hover:scale-105 text-sm w-full shadow-lg hover:shadow-xl"
-                >
-                  Get Support
-                </button>
-              </div>
+            
             </div>
           </div>
         </div>
