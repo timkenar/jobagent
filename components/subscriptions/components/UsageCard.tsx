@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { TrendingUp, AlertTriangle, CheckCircle, Lock, ExternalLink } from 'lucide-react';
 import type { FeatureType, UsageStats } from '../types';
 
@@ -17,6 +18,7 @@ const UsageCard: React.FC<UsageCardProps> = ({
   compact = false,
   className = ''
 }) => {
+  const navigate = useNavigate();
   const percentage = Math.round((usage.used / usage.limit) * 100);
   const canUse = usage.remaining > 0;
 
@@ -59,9 +61,9 @@ const UsageCard: React.FC<UsageCardProps> = ({
 
   if (compact) {
     return (
-      <div className={`flex items-center space-x-2 ${className}`}>
+      <div className={`flex items-center space-x-2 text-gray-600 dark:text-gray-300 ${className}`}>
         {getIcon()}
-        <span className="text-sm text-gray-600">
+        <span className="text-sm">
           {usage.used} / {usage.limit}
         </span>
         <span className={`text-xs ${getStatusColor()}`}>
@@ -69,8 +71,8 @@ const UsageCard: React.FC<UsageCardProps> = ({
         </span>
         {!canUse && showUpgrade && (
           <button
-            onClick={() => window.location.href = '/subscriptions/plans'}
-            className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 transition-colors flex items-center"
+            onClick={() => navigate('/subscriptions/plans')}
+            className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors flex items-center"
           >
             Upgrade
             <ExternalLink className="w-3 h-3 ml-1" />
@@ -81,11 +83,11 @@ const UsageCard: React.FC<UsageCardProps> = ({
   }
 
   return (
-    <div className={`bg-white rounded-lg border border-gray-200 p-4 ${className}`}>
+    <div className={`bg-white dark:bg-gray-900/60 rounded-lg border border-gray-200 dark:border-gray-700 p-4 ${className}`}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-2">
           {getIcon()}
-          <h3 className="font-medium text-gray-900">{getFeatureLabel()}</h3>
+          <h3 className="font-medium text-gray-900 dark:text-gray-100">{getFeatureLabel()}</h3>
         </div>
         <span className={`text-sm font-medium ${getStatusColor()}`}>
           {getStatusMessage()}
@@ -94,13 +96,13 @@ const UsageCard: React.FC<UsageCardProps> = ({
 
       <div className="space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-600">Used</span>
-          <span className="font-medium">
+          <span className="text-gray-600 dark:text-gray-400">Used</span>
+          <span className="font-medium text-gray-900 dark:text-gray-100">
             {usage.used} / {usage.limit}
           </span>
         </div>
         
-        <div className="w-full bg-gray-200 rounded-full h-2">
+        <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2">
           <div
             className={`h-2 rounded-full transition-all duration-300 ${getProgressColor()}`}
             style={{ width: `${Math.min(percentage, 100)}%` }}
@@ -108,8 +110,8 @@ const UsageCard: React.FC<UsageCardProps> = ({
         </div>
         
         <div className="flex justify-between text-sm">
-          <span className="text-gray-500">Remaining</span>
-          <span className={`font-medium ${canUse ? 'text-gray-900' : 'text-red-600'}`}>
+          <span className="text-gray-500 dark:text-gray-400">Remaining</span>
+          <span className={`font-medium ${canUse ? 'text-gray-900 dark:text-gray-100' : 'text-red-600 dark:text-red-400'}`}>
             {usage.remaining}
           </span>
         </div>
@@ -123,13 +125,13 @@ const UsageCard: React.FC<UsageCardProps> = ({
       </div>
 
       {!canUse && showUpgrade && (
-        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-800 mb-2">
+        <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/40 rounded-lg">
+          <p className="text-sm text-blue-800 dark:text-blue-200 mb-2">
             You've reached your {getFeatureLabel().toLowerCase()} limit.
           </p>
           <button
-            onClick={() => window.location.href = '/subscriptions/plans'}
-            className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
+            onClick={() => navigate('/subscriptions/plans')}
+            className="w-full px-3 py-2 bg-blue-600 dark:bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center justify-center"
           >
             Upgrade Plan
             <ExternalLink className="w-4 h-4 ml-2" />
@@ -138,13 +140,13 @@ const UsageCard: React.FC<UsageCardProps> = ({
       )}
 
       {percentage >= 70 && canUse && showUpgrade && (
-        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-sm text-yellow-800 mb-2">
+        <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-500/10 border border-yellow-200 dark:border-yellow-500/40 rounded-lg">
+          <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-2">
             You're approaching your limit for {getFeatureLabel().toLowerCase()}.
           </p>
           <button
-            onClick={() => window.location.href = '/subscriptions/plans'}
-            className="text-sm text-yellow-700 hover:text-yellow-900 underline flex items-center"
+            onClick={() => navigate('/subscriptions/plans')}
+            className="text-sm text-yellow-700 dark:text-yellow-300 hover:text-yellow-900 dark:hover:text-yellow-100 underline flex items-center"
           >
             Consider upgrading
             <ExternalLink className="w-3 h-3 ml-1" />

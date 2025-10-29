@@ -4,7 +4,6 @@ import {
   Bell, 
   CreditCard, 
   Shield, 
-  ArrowLeft, 
   Save, 
   Check, 
   X,
@@ -19,6 +18,7 @@ import {
 import { useSubscription } from '../context/SubscriptionContext';
 import ThemeToggle from '../../shared/ThemeToggle';
 import { useTheme } from '../../../src/contexts/ThemeContext';
+import SubscriptionLayout from '../layout/SubscriptionLayout';
 
 interface NotificationSettings {
   email_notifications: boolean;
@@ -37,7 +37,7 @@ interface PaymentMethod {
 }
 
 const SettingsPage: React.FC = () => {
-  const { currentSubscription, loading, error } = useSubscription();
+  const { loading, error } = useSubscription();
   const { theme } = useTheme();
   
   const [activeTab, setActiveTab] = useState<'notifications' | 'payment' | 'privacy' | 'account' | 'appearance'>('notifications');
@@ -113,10 +113,10 @@ const SettingsPage: React.FC = () => {
           {Object.entries(notifications).map(([key, value]) => (
             <div key={key} className="flex items-center justify-between">
               <div>
-                <label className="text-sm font-medium text-gray-700 block">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block">
                   {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                 </label>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   {key === 'email_notifications' && 'Receive general email notifications'}
                   {key === 'payment_reminders' && 'Get notified about upcoming payments'}
                   {key === 'usage_alerts' && 'Alerts when approaching usage limits'}
@@ -126,7 +126,7 @@ const SettingsPage: React.FC = () => {
               <button
                 onClick={() => setNotifications(prev => ({ ...prev, [key]: !value }))}
                 className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                  value ? 'bg-blue-600' : 'bg-gray-200'
+                  value ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
                 }`}
               >
                 <span
@@ -146,39 +146,39 @@ const SettingsPage: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Payment Methods</h3>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
+        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors text-sm">
           Add New Method
         </button>
       </div>
       
       <div className="space-y-4">
         {paymentMethods.map((method) => (
-          <div key={method.id} className="border border-gray-200 rounded-lg p-4">
+          <div key={method.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-900/60">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-6 bg-blue-600 rounded flex items-center justify-center">
+                <div className="w-10 h-6 bg-blue-600 dark:bg-blue-500 rounded flex items-center justify-center">
                   <span className="text-white text-xs font-bold">
                     {method.type.toUpperCase()}
                   </span>
                 </div>
                 <div>
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                       •••• •••• •••• {method.last_four}
                     </span>
                     {method.is_default && (
-                      <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                      <span className="bg-green-100 dark:bg-green-500/20 text-green-800 dark:text-green-200 text-xs px-2 py-1 rounded-full">
                         Default
                       </span>
                     )}
                   </div>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
                     Expires {method.expiry_month.toString().padStart(2, '0')}/{method.expiry_year}
                   </span>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
-                <button className="p-1 text-gray-400 hover:text-blue-600">
+                <button className="p-1 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400">
                   <Edit3 className="w-4 h-4" />
                 </button>
                 <button
@@ -186,7 +186,7 @@ const SettingsPage: React.FC = () => {
                     setItemToDelete(method.id);
                     setShowDeleteModal(true);
                   }}
-                  className="p-1 text-gray-400 hover:text-red-600"
+                  className="p-1 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -206,10 +206,10 @@ const SettingsPage: React.FC = () => {
           {Object.entries(privacySettings).map(([key, value]) => (
             <div key={key} className="flex items-center justify-between">
               <div>
-                <label className="text-sm font-medium text-gray-700 block">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300 block">
                   {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                 </label>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   {key === 'share_usage_data' && 'Help improve our service by sharing anonymous usage data'}
                   {key === 'marketing_communications' && 'Receive promotional emails and product updates'}
                   {key === 'third_party_integrations' && 'Allow integration with third-party services'}
@@ -218,7 +218,7 @@ const SettingsPage: React.FC = () => {
               <button
                 onClick={() => setPrivacySettings(prev => ({ ...prev, [key]: !value }))}
                 className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                  value ? 'bg-blue-600' : 'bg-gray-200'
+                  value ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
                 }`}
               >
                 <span
@@ -239,22 +239,22 @@ const SettingsPage: React.FC = () => {
       <div>
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Account Management</h3>
         <div className="space-y-4">
-          <div className="border border-gray-200 rounded-lg p-4">
-            <h4 className="font-medium text-gray-900 mb-2">Export Data</h4>
-            <p className="text-sm text-gray-600 mb-3">
+          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-900/60">
+            <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Export Data</h4>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
               Download all your subscription data, payment history, and usage statistics.
             </p>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
+            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 transition-colors text-sm">
               Export Data
             </button>
           </div>
           
-          <div className="border border-red-200 rounded-lg p-4">
-            <h4 className="font-medium text-red-900 mb-2">Delete Account</h4>
-            <p className="text-sm text-red-600 mb-3">
+          <div className="border border-red-200 dark:border-red-900/60 rounded-lg p-4 bg-red-50 dark:bg-red-900/20">
+            <h4 className="font-medium text-red-900 dark:text-red-200 mb-2">Delete Account</h4>
+            <p className="text-sm text-red-600 dark:text-red-300 mb-3">
               Permanently delete your account and all associated data. This action cannot be undone.
             </p>
-            <button className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors text-sm">
+            <button className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 transition-colors text-sm">
               Delete Account
             </button>
           </div>
@@ -268,7 +268,7 @@ const SettingsPage: React.FC = () => {
       <div>
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Appearance Settings</h3>
         <div className="space-y-6">
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-900/60">
             <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Theme</h4>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               Choose your preferred color theme. By default, the theme follows your system settings.
@@ -290,114 +290,135 @@ const SettingsPage: React.FC = () => {
     </div>
   );
 
+  const headerActions = (
+    <div className="flex items-center space-x-3">
+      {showSuccess && (
+        <div className="flex items-center text-sm text-green-600 dark:text-green-400">
+          <Check className="w-4 h-4 mr-1" />
+          Saved successfully
+        </div>
+      )}
+      <button
+        onClick={handleSave}
+        disabled={saving}
+        className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 flex items-center"
+      >
+        {saving ? (
+          <>
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            Saving...
+          </>
+        ) : (
+          <>
+            <Save className="w-4 h-4 mr-2" />
+            Save Changes
+          </>
+        )}
+      </button>
+    </div>
+  );
+
+  if (loading) {
+    return (
+      <SubscriptionLayout
+        title="Subscription Settings"
+        subtitle="Manage your subscription preferences and account settings."
+        headerActions={headerActions}
+      >
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-400" />
+        </div>
+      </SubscriptionLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <SubscriptionLayout
+        title="Subscription Settings"
+        subtitle="Manage your subscription preferences and account settings."
+        headerActions={headerActions}
+      >
+        <div className="flex items-center justify-center py-24">
+          <div className="bg-white dark:bg-gray-900 border border-red-200 dark:border-red-800 rounded-xl p-6 max-w-md text-center shadow">
+            <AlertCircle className="w-12 h-12 text-red-600 dark:text-red-400 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              Unable to load settings
+            </h2>
+            <p className="text-gray-600 dark:text-gray-300">{error}</p>
+          </div>
+        </div>
+      </SubscriptionLayout>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 transition-colors duration-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => window.history.back()}
-                className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Subscription Settings</h1>
-                <p className="text-gray-600 dark:text-gray-400">Manage your subscription preferences and account settings</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              {showSuccess && (
-                <div className="flex items-center text-green-600 text-sm">
-                  <Check className="w-4 h-4 mr-1" />
-                  Saved successfully
-                </div>
-              )}
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4 mr-2" />
-                    Save Changes
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar */}
-          <div className="lg:w-64 flex-shrink-0">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 transition-colors duration-200">
-              <nav className="space-y-2">
-                {tabs.map((tab) => {
-                  const Icon = tab.icon;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id as any)}
-                      className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                        activeTab === tab.id
-                          ? 'bg-blue-100 text-blue-700'
-                          : 'text-gray-600 hover:bg-gray-100'
+    <SubscriptionLayout
+      title="Subscription Settings"
+      subtitle="Manage your subscription preferences and account settings."
+      headerActions={headerActions}
+    >
+      <div className="flex flex-col gap-8 lg:flex-row">
+        <div className="flex-shrink-0 lg:w-64">
+          <div className="bg-white dark:bg-gray-900/60 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+            <nav className="space-y-2">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className={`w-full flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      isActive
+                        ? 'bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-200'
+                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    <Icon
+                      className={`w-4 h-4 mr-3 ${
+                        isActive ? 'text-blue-600 dark:text-blue-200' : 'text-gray-500 dark:text-gray-400'
                       }`}
-                    >
-                      <Icon className="w-4 h-4 mr-3" />
-                      {tab.label}
-                    </button>
-                  );
-                })}
-              </nav>
-            </div>
+                    />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </nav>
           </div>
+        </div>
 
-          {/* Main Content */}
-          <div className="flex-1">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-200">
-              {activeTab === 'notifications' && renderNotificationSettings()}
-              {activeTab === 'payment' && renderPaymentMethods()}
-              {activeTab === 'privacy' && renderPrivacySettings()}
-              {activeTab === 'account' && renderAccountSettings()}
-              {activeTab === 'appearance' && renderAppearanceSettings()}
-            </div>
+        <div className="flex-1">
+          <div className="bg-white dark:bg-gray-900/60 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+            {activeTab === 'notifications' && renderNotificationSettings()}
+            {activeTab === 'payment' && renderPaymentMethods()}
+            {activeTab === 'privacy' && renderPrivacySettings()}
+            {activeTab === 'account' && renderAccountSettings()}
+            {activeTab === 'appearance' && renderAppearanceSettings()}
           </div>
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-900 rounded-lg max-w-md w-full p-6 border border-gray-200 dark:border-gray-700">
             <div className="flex items-center mb-4">
-              <AlertCircle className="w-6 h-6 text-red-600 mr-3" />
-              <h3 className="text-lg font-semibold text-gray-900">Confirm Deletion</h3>
+              <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400 mr-3" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Confirm Deletion</h3>
             </div>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
               Are you sure you want to delete this payment method? This action cannot be undone.
             </p>
             <div className="flex space-x-4">
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteConfirm}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                className="flex-1 px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-colors"
               >
                 Delete
               </button>
@@ -405,7 +426,7 @@ const SettingsPage: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </SubscriptionLayout>
   );
 };
 

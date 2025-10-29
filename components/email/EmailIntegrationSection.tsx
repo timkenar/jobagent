@@ -64,7 +64,7 @@ const EmailIntegrationSection: React.FC = () => {
     setLoading(true);
     const cachedAccounts = getCachedEmailAccounts();
     
-    if (cachedAccounts && gmail.accounts.length === 0) {
+    if (cachedAccounts && gmail.emailAccounts.length === 0) {
       setLoading(false);
       setTimeout(() => refreshEmailAccounts(true), 1000);
     } else {
@@ -77,8 +77,8 @@ const EmailIntegrationSection: React.FC = () => {
       if (!background) setLoading(true);
       await gmail.refreshAccounts();
       
-      if (gmail.accounts.length > 0) {
-        setEmailAccountsCache(gmail.accounts);
+      if (gmail.emailAccounts.length > 0) {
+        setEmailAccountsCache(gmail.emailAccounts);
       }
     } catch (error) {
       console.error('Error refreshing email accounts:', error);
@@ -100,7 +100,7 @@ const EmailIntegrationSection: React.FC = () => {
         setSuccessMessage('🎉 Email connected successfully! You can now manage your job application emails.');
         
         gmail.refreshAccounts().then(() => {
-          setEmailAccountsCache(gmail.accounts);
+          setEmailAccountsCache(gmail.emailAccounts);
           setConnectionProgress(100);
           setConnecting(false);
           

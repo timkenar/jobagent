@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { 
-  CreditCard, 
-  Calendar, 
-  Settings, 
+import { useNavigate } from 'react-router-dom';
+import {
+  CreditCard,
+  Calendar,
+  Settings,
   AlertCircle,
   CheckCircle,
   XCircle,
@@ -10,39 +11,49 @@ import {
   Loader2,
   Award,
   Clock,
-  ArrowLeft,
   TrendingUp,
-  Star
+  Star,
 } from 'lucide-react';
 import { useSubscription } from '../context/SubscriptionContext';
 import UsageCard from '../components/UsageCard';
+import SubscriptionLayout from '../layout/SubscriptionLayout';
+
+const statusStyles: Record<string, string> = {
+  active: 'text-green-600 bg-green-100 dark:text-green-300 dark:bg-green-900/40',
+  cancelled: 'text-red-600 bg-red-100 dark:text-red-300 dark:bg-red-900/40',
+  expired: 'text-gray-600 bg-gray-100 dark:text-gray-300 dark:bg-gray-800/70',
+  pending: 'text-yellow-600 bg-yellow-100 dark:text-yellow-300 dark:bg-yellow-900/40',
+  suspended: 'text-orange-600 bg-orange-100 dark:text-orange-300 dark:bg-orange-900/40',
+  default: 'text-gray-600 bg-gray-100 dark:text-gray-300 dark:bg-gray-800/70',
+};
 
 const DashboardPage: React.FC = () => {
-  const { 
-    currentSubscription, 
-    stats, 
-    loading, 
-    error, 
+  const navigate = useNavigate();
+  const {
+    currentSubscription,
+    stats,
+    loading,
+    error,
     cancelSubscription,
     reactivateSubscription,
     refreshCurrentSubscription,
-    refreshStats 
+    refreshStats,
   } = useSubscription();
-  
+
   const [actionLoading, setActionLoading] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [showCancelModal, setShowCancelModal] = useState(false);
 
   const handleCancelSubscription = async () => {
     if (!currentSubscription) return;
-    
+
     try {
       setActionLoading(true);
       await cancelSubscription(currentSubscription.id, cancelReason);
       setShowCancelModal(false);
       setCancelReason('');
-    } catch (error) {
-      console.error('Cancel subscription error:', error);
+    } catch (cancelError) {
+      console.error('Cancel subscription error:', cancelError);
     } finally {
       setActionLoading(false);
     }
@@ -50,12 +61,12 @@ const DashboardPage: React.FC = () => {
 
   const handleReactivateSubscription = async () => {
     if (!currentSubscription) return;
-    
+
     try {
       setActionLoading(true);
       await reactivateSubscription(currentSubscription.id);
-    } catch (error) {
-      console.error('Reactivate subscription error:', error);
+    } catch (reactivateError) {
+      console.error('Reactivate subscription error:', reactivateError);
     } finally {
       setActionLoading(false);
     }
@@ -65,109 +76,79 @@ const DashboardPage: React.FC = () => {
     try {
       setActionLoading(true);
       await Promise.all([refreshCurrentSubscription(), refreshStats()]);
-    } catch (error) {
-      console.error('Refresh error:', error);
+    } catch (refreshError) {
+      console.error('Refresh error:', refreshError);
     } finally {
       setActionLoading(false);
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'text-green-600 bg-green-100';
-      case 'cancelled': return 'text-red-600 bg-red-100';
-      case 'expired': return 'text-gray-600 bg-gray-100';
-      case 'pending': return 'text-yellow-600 bg-yellow-100';
-      case 'suspended': return 'text-orange-600 bg-orange-100';
-      default: return 'text-gray-600 bg-gray-100';
-    }
+  const getStatusBadge = (status: string) => {
+    const normalized = status?.toLowerCase() || 'default';
+    return statusStyles[normalized] || statusStyles.default;
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
-      day: 'numeric'
+      day: 'numeric',
     });
-  };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <span className="text-gray-600">Loading subscription details...</span>
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="flex flex-col items-center justify-center py-24">
+          <Loader2 className="mb-4 h-8 w-8 animate-spin text-blue-600 dark:text-blue-400" />
+          <span className="text-gray-600 dark:text-gray-300">
+            Loading subscription details...
+          </span>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full text-center">
-          <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Subscription</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={handleRefresh}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => window.history.back()}
-                className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Subscription Dashboard</h1>
-                <p className="text-gray-600">Manage your subscription and track usage</p>
-              </div>
-            </div>
+    if (error) {
+      return (
+        <div className="flex items-center justify-center py-24">
+          <div className="w-full max-w-md rounded-2xl border border-red-200 dark:border-red-800 bg-white dark:bg-gray-900 p-6 text-center shadow-lg">
+            <AlertCircle className="mx-auto mb-4 h-12 w-12 text-red-600 dark:text-red-400" />
+            <h2 className="mb-2 text-xl font-semibold text-gray-900 dark:text-gray-100">
+              Error Loading Subscription
+            </h2>
+            <p className="mb-4 text-gray-600 dark:text-gray-300">{error}</p>
             <button
+              type="button"
               onClick={handleRefresh}
-              disabled={actionLoading}
-              className="flex items-center px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
             >
-              <RefreshCw className={`w-4 h-4 mr-2 ${actionLoading ? 'animate-spin' : ''}`} />
-              Refresh
+              Try Again
             </button>
           </div>
         </div>
-      </div>
+      );
+    }
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* No Active Subscription */}
+    return (
+      <div className="max-w-7xl mx-auto space-y-12 pb-16">
         {!stats?.has_active_subscription ? (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-            <Star className="w-12 h-12 text-blue-600 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-blue-900 mb-2">No Active Subscription</h2>
-            <p className="text-blue-700 mb-6">
+          <section className="rounded-2xl border border-blue-200 dark:border-blue-800 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 p-8 text-center shadow-sm">
+            <Star className="mx-auto mb-4 h-12 w-12 text-blue-600 dark:text-blue-300" />
+            <h2 className="mb-2 text-2xl font-semibold text-blue-900 dark:text-blue-100">
+              No Active Subscription
+            </h2>
+            <p className="mb-6 text-blue-700 dark:text-blue-100/80">
               You're currently on the free plan. Upgrade to unlock more features and higher limits.
             </p>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <button
-                onClick={() => window.location.href = '/subscriptions/plans'}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                type="button"
+                onClick={() => navigate('/subscriptions/plans')}
+                className="w-full rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 md:w-auto"
               >
-                View Plans & Upgrade
+                View Plans &amp; Upgrade
               </button>
               {stats && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                   {Object.entries(stats.usage_stats).map(([feature, usage]) => (
                     <UsageCard
                       key={feature}
@@ -180,204 +161,223 @@ const DashboardPage: React.FC = () => {
                 </div>
               )}
             </div>
-          </div>
+          </section>
         ) : (
           <>
-            {/* Current Subscription Card */}
             {currentSubscription && (
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 mb-8">
-                <div className="flex items-center justify-between mb-6">
+              <section className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/60 p-6 shadow-sm">
+                <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <div className="flex items-center">
-                    <Award className="w-6 h-6 text-blue-600 mr-3" />
+                    <Award className="mr-3 h-6 w-6 text-blue-600 dark:text-blue-400" />
                     <div>
-                      <h2 className="text-xl font-semibold text-gray-900">
+                      <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                         {currentSubscription.plan.name}
                       </h2>
-                      <p className="text-gray-600 text-sm">
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
                         {currentSubscription.plan.description}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(currentSubscription.status)}`}>
-                      {currentSubscription.status.charAt(0).toUpperCase() + currentSubscription.status.slice(1)}
-                    </span>
-                  </div>
+                  <span
+                    className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${getStatusBadge(
+                      currentSubscription.status
+                    )}`}
+                  >
+                    {currentSubscription.status.charAt(0).toUpperCase() +
+                      currentSubscription.status.slice(1)}
+                  </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {/* Subscription Details */}
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
                   <div className="space-y-3">
-                    <div className="flex items-center text-sm">
-                      <Calendar className="w-4 h-4 text-gray-400 mr-2" />
-                      <span className="text-gray-600">Started: {formatDate(currentSubscription.start_date)}</span>
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                      <Calendar className="mr-2 h-4 w-4 text-gray-400 dark:text-gray-500" />
+                      Started: {formatDate(currentSubscription.start_date)}
                     </div>
-                    <div className="flex items-center text-sm">
-                      <Clock className="w-4 h-4 text-gray-400 mr-2" />
-                      <span className="text-gray-600">
-                        {currentSubscription.status === 'active' ? 'Renews' : 'Expires'}: {formatDate(currentSubscription.end_date)}
-                      </span>
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                      <Clock className="mr-2 h-4 w-4 text-gray-400 dark:text-gray-500" />
+                      {currentSubscription.status === 'active' ? 'Renews' : 'Expires'}:{' '}
+                      {formatDate(currentSubscription.end_date)}
                     </div>
-                    <div className="flex items-center text-sm">
-                      <CreditCard className="w-4 h-4 text-gray-400 mr-2" />
-                      <span className="text-gray-600">
-                        {currentSubscription.plan.price_display}/{currentSubscription.plan.billing_cycle}
-                      </span>
+                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
+                      <CreditCard className="mr-2 h-4 w-4 text-gray-400 dark:text-gray-500" />
+                      {currentSubscription.plan.price_display}/{currentSubscription.plan.billing_cycle}
                     </div>
                   </div>
 
-                  {/* Days Remaining */}
                   <div className="text-center">
-                    <div className="text-3xl font-bold text-gray-900">
+                    <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">
                       {currentSubscription.days_remaining}
                     </div>
-                    <div className="text-sm text-gray-600">Days Remaining</div>
-                    {currentSubscription.days_remaining <= 7 && currentSubscription.status === 'active' && (
-                      <div className="mt-2 text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded">
-                        Expires soon
-                      </div>
-                    )}
+                    <div className="text-sm text-gray-600 dark:text-gray-300">Days Remaining</div>
+                    {currentSubscription.days_remaining <= 7 &&
+                      currentSubscription.status === 'active' && (
+                        <div className="mt-2 inline-flex rounded-md bg-orange-100 px-2 py-1 text-xs font-medium text-orange-700 dark:bg-orange-900/40 dark:text-orange-200">
+                          Expires soon
+                        </div>
+                      )}
                   </div>
 
-                  {/* Auto Renewal */}
                   <div className="text-center">
-                    <div className="flex items-center justify-center mb-1">
+                    <div className="mb-2 flex items-center justify-center">
                       {currentSubscription.auto_renew ? (
-                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <CheckCircle className="h-5 w-5 text-green-500 dark:text-green-300" />
                       ) : (
-                        <XCircle className="w-5 h-5 text-red-500" />
+                        <XCircle className="h-5 w-5 text-red-500 dark:text-red-300" />
                       )}
                     </div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-gray-600 dark:text-gray-300">
                       Auto-renewal {currentSubscription.auto_renew ? 'enabled' : 'disabled'}
                     </div>
                   </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex flex-wrap gap-3 mt-6">
+                <div className="mt-6 flex flex-wrap gap-3">
                   {currentSubscription.status === 'active' ? (
                     <button
+                      type="button"
                       onClick={() => setShowCancelModal(true)}
-                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                      className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700"
                     >
                       Cancel Subscription
                     </button>
                   ) : currentSubscription.status === 'cancelled' ? (
                     <button
+                      type="button"
                       onClick={handleReactivateSubscription}
                       disabled={actionLoading}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                      className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-green-700 disabled:opacity-50 dark:bg-green-500 dark:hover:bg-green-600"
                     >
                       {actionLoading ? 'Processing...' : 'Reactivate Subscription'}
                     </button>
                   ) : null}
-                  
+
                   <button
-                    onClick={() => window.location.href = '/subscriptions/plans'}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    type="button"
+                    onClick={() => navigate('/subscriptions/plans')}
+                    className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
                   >
                     Change Plan
                   </button>
-                  
                   <button
-                    onClick={() => window.location.href = '/subscriptions/billing'}
-                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                    type="button"
+                    onClick={() => navigate('/subscriptions/billing')}
+                    className="inline-flex items-center rounded-lg bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                   >
-                    <CreditCard className="w-4 h-4 mr-2 inline" />
+                    <CreditCard className="mr-2 h-4 w-4" />
                     Billing History
                   </button>
                 </div>
-              </div>
+              </section>
             )}
 
-            {/* Usage Statistics */}
             {stats && (
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
-                <div className="flex items-center mb-6">
-                  <TrendingUp className="w-6 h-6 text-blue-600 mr-3" />
-                  <h2 className="text-xl font-semibold text-gray-900">Usage Statistics</h2>
+              <section className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/60 p-6 shadow-sm">
+                <div className="mb-6 flex items-center">
+                  <TrendingUp className="mr-3 h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                    Usage Statistics
+                  </h2>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
                   {Object.entries(stats.usage_stats).map(([feature, usage]) => (
-                    <UsageCard
-                      key={feature}
-                      feature={feature as any}
-                      usage={usage}
-                      showUpgrade={true}
-                    />
+                    <UsageCard key={feature} feature={feature as any} usage={usage} showUpgrade />
                   ))}
                 </div>
-              </div>
+              </section>
             )}
           </>
         )}
 
-        {/* Quick Actions */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <section className="grid grid-cols-1 gap-6 md:grid-cols-3">
           <button
-            onClick={() => window.location.href = '/subscriptions/plans'}
-            className="p-6 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-colors text-left"
+            type="button"
+            onClick={() => navigate('/subscriptions/plans')}
+            className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/60 p-6 text-left transition-colors hover:border-blue-300 dark:hover:border-blue-500"
           >
-            <Star className="w-8 h-8 text-blue-600 mb-3" />
-            <h3 className="font-semibold text-gray-900 mb-2">View All Plans</h3>
-            <p className="text-gray-600 text-sm">Compare features and pricing</p>
+            <Star className="mb-3 h-8 w-8 text-blue-600 dark:text-blue-400" />
+            <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+              View All Plans
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Compare features and pricing
+            </p>
           </button>
-          
-          <button
-            onClick={() => window.location.href = '/subscriptions/billing'}
-            className="p-6 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-colors text-left"
-          >
-            <CreditCard className="w-8 h-8 text-blue-600 mb-3" />
-            <h3 className="font-semibold text-gray-900 mb-2">Billing History</h3>
-            <p className="text-gray-600 text-sm">View payments and invoices</p>
-          </button>
-          
-          <button
-            onClick={() => window.location.href = '/subscriptions/settings'}
-            className="p-6 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-colors text-left"
-          >
-            <Settings className="w-8 h-8 text-blue-600 mb-3" />
-            <h3 className="font-semibold text-gray-900 mb-2">Settings</h3>
-            <p className="text-gray-600 text-sm">Manage subscription preferences</p>
-          </button>
-        </div>
-      </div>
 
-      {/* Cancel Modal */}
+          <button
+            type="button"
+            onClick={() => navigate('/subscriptions/billing')}
+            className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/60 p-6 text-left transition-colors hover:border-blue-300 dark:hover:border-blue-500"
+          >
+            <CreditCard className="mb-3 h-8 w-8 text-blue-600 dark:text-blue-400" />
+            <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Billing History
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              View payments and invoices
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate('/subscriptions/settings')}
+            className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/60 p-6 text-left transition-colors hover:border-blue-300 dark:hover:border-blue-500"
+          >
+            <Settings className="mb-3 h-8 w-8 text-blue-600 dark:text-blue-400" />
+            <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Settings
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              Manage subscription preferences
+            </p>
+          </button>
+        </section>
+      </div>
+    );
+  };
+
+  return (
+    <SubscriptionLayout
+      title="Subscription Dashboard"
+      subtitle="Manage your plan, usage, and billing details."
+    >
+      {renderContent()}
+
       {showCancelModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-2xl">
+            <h3 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
               Cancel Subscription
             </h3>
-            <p className="text-gray-600 mb-4">
-              Are you sure you want to cancel your subscription? You'll lose access to premium features at the end of your current billing period.
+            <p className="mb-4 text-sm text-gray-600 dark:text-gray-300">
+              Are you sure you want to cancel your subscription? You&apos;ll lose access to premium
+              features at the end of your current billing period.
             </p>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Reason for cancellation (optional)
               </label>
               <textarea
                 value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
+                onChange={(event) => setCancelReason(event.target.value)}
                 placeholder="Help us improve by sharing your feedback..."
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-3 text-sm text-gray-900 dark:text-gray-100 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 rows={3}
               />
             </div>
-            <div className="flex space-x-4">
+            <div className="flex flex-col gap-3 sm:flex-row">
               <button
+                type="button"
                 onClick={() => setShowCancelModal(false)}
-                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                className="flex-1 rounded-lg bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
               >
                 Keep Subscription
               </button>
               <button
+                type="button"
                 onClick={handleCancelSubscription}
                 disabled={actionLoading}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                className="flex-1 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-60 dark:bg-red-500 dark:hover:bg-red-600"
               >
                 {actionLoading ? 'Cancelling...' : 'Cancel Subscription'}
               </button>
@@ -385,7 +385,7 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </SubscriptionLayout>
   );
 };
 

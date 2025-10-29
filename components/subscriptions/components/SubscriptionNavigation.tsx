@@ -42,10 +42,10 @@ const SubscriptionNavigation: React.FC = () => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+    <div className="bg-white dark:bg-gray-900/60 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-4 mb-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-medium text-gray-900">Subscription Management</h3>
-        <CreditCard className="w-5 h-5 text-gray-400" />
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">Subscription Management</h3>
+        <CreditCard className="w-5 h-5 text-gray-400 dark:text-gray-500" />
       </div>
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -59,15 +59,15 @@ const SubscriptionNavigation: React.FC = () => {
               onClick={() => navigate(item.path)}
               className={`p-3 rounded-lg border-2 transition-all duration-200 text-left ${
                 isActive
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
-                  : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                  ? 'border-blue-500 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-500/10 dark:text-blue-200'
+                  : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50 dark:border-gray-800 dark:hover:border-blue-500/60 dark:hover:bg-gray-800'
               }`}
             >
-              <Icon className={`w-5 h-5 mb-2 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
-              <div className={`font-medium text-sm ${isActive ? 'text-blue-900' : 'text-gray-900'}`}>
+              <Icon className={`w-5 h-5 mb-2 ${isActive ? 'text-blue-600 dark:text-blue-200' : 'text-gray-400 dark:text-gray-500'}`} />
+              <div className={`font-medium text-sm ${isActive ? 'text-blue-900 dark:text-blue-100' : 'text-gray-900 dark:text-gray-100'}`}>
                 {item.label}
               </div>
-              <div className={`text-xs ${isActive ? 'text-blue-600' : 'text-gray-500'}`}>
+              <div className={`text-xs ${isActive ? 'text-blue-600 dark:text-blue-200' : 'text-gray-500 dark:text-gray-400'}`}>
                 {item.description}
               </div>
             </button>

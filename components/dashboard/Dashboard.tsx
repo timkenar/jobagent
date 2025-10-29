@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ResponsiveLayout } from '../layout';
 import WorkflowSteps from './WorkflowSteps';
 import DashboardOverview from './DashboardOverview';
@@ -179,7 +180,27 @@ const Settings: React.FC = () => {
 };
 
 const Dashboard: React.FC = () => {
-  const [activeSection, setActiveSection] = useState<string>('dashboard');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [activeSection, setActiveSectionState] = useState<string>('dashboard');
+
+  useEffect(() => {
+    const state = (location.state as { activeSection?: string } | null)?.activeSection;
+    if (state && state !== activeSection) {
+      setActiveSectionState(state);
+    }
+  }, [location.state, activeSection]);
+
+  const handleSetActiveSection = useCallback(
+    (section: string) => {
+      if (section === 'subscriptions') {
+        navigate('/subscriptions/dashboard', { state: { fromSection: activeSection } });
+        return;
+      }
+      setActiveSectionState(section);
+    },
+    [navigate, activeSection]
+  );
   const { user, loading, getDisplayName, getEmail, getInitials } = useAuth();
   
   // Job search state
@@ -296,7 +317,7 @@ const Dashboard: React.FC = () => {
   const renderMainContent = () => {
     switch (activeSection) {
       case 'dashboard':
-        return <DashboardOverview setActiveSection={setActiveSection} />;
+        return <DashboardOverview setActiveSection={handleSetActiveSection} />;
       case 'workflow':
         return <WorkflowSteps />;
       case 'jobsearch':
@@ -365,7 +386,7 @@ const Dashboard: React.FC = () => {
   return (
     <ResponsiveLayout
       activeSection={activeSection}
-      setActiveSection={setActiveSection}
+      setActiveSection={handleSetActiveSection}
       onSignOut={handleSignOut}
       isSigningOut={isLoadingSearch}
     >
